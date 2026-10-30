@@ -127,41 +127,17 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .abtn{flex:1;padding:11px;font-size:13px;border-radius:12px;background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.72);cursor:pointer;transition:all .15s}
 .abtn:active{transform:scale(.95);background:var(--glass)}
 
-/* Columns base — mobile: transparent wrappers */
-.home-left,.home-right{display:contents}
-
-/* ═══ DESKTOP — via JS data-attribute to beat .screen.active specificity ═══ */
-#home[data-desktop]{
-  flex-direction:row !important;
-  align-items:flex-start !important;
-  justify-content:center !important;
-  padding:28px 24px 40px !important;
-  gap:28px !important;
-  overflow-y:auto !important;
+/* ═══ DESKTOP — wider content, same single-column layout ═══ */
+@media (min-width:720px) {
+  #home{padding:24px 24px 40px;overflow-y:auto}
+  .logo{font-size:46px}
+  h1{font-size:24px}
+  .upload-box,.btn,.btn-reset,.sl,.opt-row,.modes,.themes-grid,.scbox{max-width:480px}
+  .upload-box img{max-height:260px}
+  #gs{align-items:center;padding:14px 20px 20px}
+  .gh,.pgw,.board-wrap{max-width:820px}
+  .abar{max-width:480px}
 }
-#home[data-desktop] .home-left{
-  display:flex !important;flex-direction:column;align-items:center;
-  flex:0 0 320px;max-width:320px;width:320px;position:sticky;top:20px;
-}
-#home[data-desktop] .home-right{
-  display:flex !important;flex-direction:column;align-items:flex-start;
-  flex:0 0 320px;max-width:320px;width:320px;
-}
-#home[data-desktop] .home-left .upload-box,
-#home[data-desktop] .home-left .btn,
-#home[data-desktop] .home-left .scbox,
-#home[data-desktop] .home-left .btn-reset{max-width:320px;width:100%}
-#home[data-desktop] .home-left .upload-box img{max-height:230px}
-#home[data-desktop] .home-right .sl,
-#home[data-desktop] .home-right .opt-row,
-#home[data-desktop] .home-right .modes,
-#home[data-desktop] .home-right .themes-grid{max-width:320px;width:100%}
-/* game screen desktop */
-#gs[data-desktop]{align-items:center;padding:14px 20px 20px}
-#gs[data-desktop] .gh,
-#gs[data-desktop] .pgw,
-#gs[data-desktop] .board-wrap{max-width:820px}
-#gs[data-desktop] .abar{max-width:480px}
 
 /* WIN */
 #ws{justify-content:center}
@@ -212,56 +188,48 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 
 <!-- HOME -->
 <div id="home" class="screen active">
+  <div class="logo">🧩</div>
+  <h1>Фото Пазл</h1>
+  <p class="tagline">Завантаж будь-яке фото і збери його по шматочках</p>
 
-  <!-- LEFT COLUMN: upload + start button -->
-  <div class="home-left">
-    <div class="logo">🧩</div>
-    <h1>Фото Пазл</h1>
-    <p class="tagline">Завантаж будь-яке фото і збери його по шматочках</p>
-
-    <div class="upload-box" id="ub">
-      <div class="upload-ph" id="uph">
-        <div class="uico">📷</div>
-        <p><strong>Натисни, щоб обрати фото</strong><br>з галереї або зроби нове</p>
-      </div>
-      <img id="prev" alt="">
-      <div class="upload-bar" id="ubar">
-        <span style="font-size:12px;color:rgba(255,255,255,.8)">✓ Фото обрано</span>
-        <button class="xbtn" id="changePhotoBtn">Змінити 🔄</button>
-      </div>
+  <div class="upload-box" id="ub">
+    <div class="upload-ph" id="uph">
+      <div class="uico">📷</div>
+      <p><strong>Натисни, щоб обрати фото</strong><br>з галереї або зроби нове</p>
     </div>
-
-    <button class="btn btn-g" id="startBtn" disabled onclick="startGame(null)">Зібрати пазл 🧩</button>
-
-    <div class="scbox" style="margin-top:12px">
-      <h3>🏆 Рекорди</h3>
-      <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
+    <img id="prev" alt="">
+    <div class="upload-bar" id="ubar">
+      <span style="font-size:12px;color:rgba(255,255,255,.8)">✓ Фото обрано</span>
+      <button class="xbtn" id="changePhotoBtn">Змінити 🔄</button>
     </div>
-    <button class="btn btn-reset" onclick="resetAll()" style="margin-top:10px">🗑 Скинути все</button>
   </div>
 
-  <!-- RIGHT COLUMN: settings -->
-  <div class="home-right">
-    <div class="sl">Розмір пазлу</div>
-    <div class="opt-row">
-      <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
-      <button class="opt"    data-g="4" onclick="setGrid(this,4)">4×4<small>16 шт</small></button>
-      <button class="opt"    data-g="5" onclick="setGrid(this,5)">5×5<small>25 шт</small></button>
-      <button class="opt"    data-g="6" onclick="setGrid(this,6)">6×6<small>36 шт</small></button>
-    </div>
-
-    <div class="sl">Режим гри</div>
-    <div class="modes">
-      <div class="mc on" data-m="classic" onclick="setMode(this,'classic')"><div class="mci">♾️</div><div class="mcn">Класичний</div><div class="mcd">Без обмежень часу</div></div>
-      <div class="mc" data-m="sprint" onclick="setMode(this,'sprint')"><div class="mci">⚡</div><div class="mcn">Спринт</div><div class="mcd">3 хвилини</div></div>
-      <div class="mc" data-m="blitz" onclick="setMode(this,'blitz')"><div class="mci">🔥</div><div class="mcn">Бліц</div><div class="mcd">90 секунд</div></div>
-      <div class="mc" data-m="zen" onclick="setMode(this,'zen')"><div class="mci">🌸</div><div class="mcn">Дзен</div><div class="mcd">Без поспіху</div></div>
-    </div>
-
-    <div class="sl">Тема</div>
-    <div class="themes-grid" id="themesGrid"></div>
+  <div class="sl">Розмір пазлу</div>
+  <div class="opt-row">
+    <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
+    <button class="opt"    data-g="4" onclick="setGrid(this,4)">4×4<small>16 шт</small></button>
+    <button class="opt"    data-g="5" onclick="setGrid(this,5)">5×5<small>25 шт</small></button>
+    <button class="opt"    data-g="6" onclick="setGrid(this,6)">6×6<small>36 шт</small></button>
   </div>
 
+  <div class="sl">Режим гри</div>
+  <div class="modes">
+    <div class="mc on" data-m="classic" onclick="setMode(this,'classic')"><div class="mci">♾️</div><div class="mcn">Класичний</div><div class="mcd">Без обмежень часу</div></div>
+    <div class="mc" data-m="sprint" onclick="setMode(this,'sprint')"><div class="mci">⚡</div><div class="mcn">Спринт</div><div class="mcd">3 хвилини</div></div>
+    <div class="mc" data-m="blitz" onclick="setMode(this,'blitz')"><div class="mci">🔥</div><div class="mcn">Бліц</div><div class="mcd">90 секунд</div></div>
+    <div class="mc" data-m="zen" onclick="setMode(this,'zen')"><div class="mci">🌸</div><div class="mcn">Дзен</div><div class="mcd">Без поспіху</div></div>
+  </div>
+
+  <div class="sl">Тема</div>
+  <div class="themes-grid" id="themesGrid"></div>
+
+  <button class="btn btn-g" id="startBtn" disabled onclick="startGame(null)">Зібрати пазл 🧩</button>
+
+  <div class="scbox">
+    <h3>🏆 Рекорди</h3>
+    <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
+  </div>
+  <button class="btn btn-reset" onclick="resetAll()" style="margin-top:10px">🗑 Скинути все</button>
 </div>
 
 <!-- GAME -->
@@ -386,15 +354,6 @@ window.addEventListener('DOMContentLoaded', function() {
 
   renderScores();
   tryRestore();
-
-  /* Desktop layout via data-attribute (beats .screen.active specificity) */
-  function applyDesktop() {
-    var isDesk = window.innerWidth >= 720;
-    document.getElementById('home').setAttribute('data-desktop', isDesk ? '1' : '');
-    document.getElementById('gs').setAttribute('data-desktop', isDesk ? '1' : '');
-  }
-  applyDesktop();
-  window.addEventListener('resize', applyDesktop);
 });
 
 function pickPhoto(isInGame) {
