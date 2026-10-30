@@ -127,6 +127,49 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .abtn{flex:1;padding:11px;font-size:13px;border-radius:12px;background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.72);cursor:pointer;transition:all .15s}
 .abtn:active{transform:scale(.95);background:var(--glass)}
 
+/* ═══ DESKTOP LAYOUT (≥700px) ═══ */
+@media (min-width:700px) {
+  /* HOME: two-column layout */
+  #home{
+    flex-direction:row;
+    align-items:flex-start;
+    justify-content:center;
+    padding:30px 30px 40px;
+    gap:28px;
+    overflow-y:auto;
+  }
+  .home-left{
+    flex:0 0 320px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    position:sticky;
+    top:20px;
+  }
+  .home-right{
+    flex:1;
+    max-width:380px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .logo{font-size:52px}
+  h1{font-size:24px}
+  .upload-box{max-height:280px;min-height:160px}
+  .upload-box img{max-height:240px}
+
+  /* GAME: center board on wide screens */
+  #gs{
+    justify-content:center;
+    align-items:center;
+    padding:16px 20px 20px;
+  }
+  .gh{max-width:780px}
+  .pgw{max-width:780px}
+  .board-wrap{max-width:780px}
+  .abar{max-width:480px}
+}
+
 /* WIN */
 #ws{justify-content:center}
 .cf-wrap{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
@@ -176,48 +219,56 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 
 <!-- HOME -->
 <div id="home" class="screen active">
-  <div class="logo">🧩</div>
-  <h1>Фото Пазл</h1>
-  <p class="tagline">Завантаж будь-яке фото і збери його по шматочках</p>
 
-  <div class="upload-box" id="ub">
-    <div class="upload-ph" id="uph">
-      <div class="uico">📷</div>
-      <p><strong>Натисни, щоб обрати фото</strong><br>з галереї або зроби нове</p>
+  <!-- LEFT COLUMN: upload + start button -->
+  <div class="home-left">
+    <div class="logo">🧩</div>
+    <h1>Фото Пазл</h1>
+    <p class="tagline">Завантаж будь-яке фото і збери його по шматочках</p>
+
+    <div class="upload-box" id="ub">
+      <div class="upload-ph" id="uph">
+        <div class="uico">📷</div>
+        <p><strong>Натисни, щоб обрати фото</strong><br>з галереї або зроби нове</p>
+      </div>
+      <img id="prev" alt="">
+      <div class="upload-bar" id="ubar">
+        <span style="font-size:12px;color:rgba(255,255,255,.8)">✓ Фото обрано</span>
+        <button class="xbtn" id="changePhotoBtn">Змінити 🔄</button>
+      </div>
     </div>
-    <img id="prev" alt="">
-    <div class="upload-bar" id="ubar">
-      <span style="font-size:12px;color:rgba(255,255,255,.8)">✓ Фото обрано</span>
-      <button class="xbtn" id="changePhotoBtn">Змінити 🔄</button>
+
+    <button class="btn btn-g" id="startBtn" disabled onclick="startGame(null)">Зібрати пазл 🧩</button>
+
+    <div class="scbox" style="margin-top:12px">
+      <h3>🏆 Рекорди</h3>
+      <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
     </div>
+    <button class="btn btn-reset" onclick="resetAll()" style="margin-top:10px">🗑 Скинути все</button>
   </div>
 
-  <div class="sl">Розмір пазлу</div>
-  <div class="opt-row">
-    <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
-    <button class="opt"    data-g="4" onclick="setGrid(this,4)">4×4<small>16 шт</small></button>
-    <button class="opt"    data-g="5" onclick="setGrid(this,5)">5×5<small>25 шт</small></button>
-    <button class="opt"    data-g="6" onclick="setGrid(this,6)">6×6<small>36 шт</small></button>
+  <!-- RIGHT COLUMN: settings -->
+  <div class="home-right">
+    <div class="sl">Розмір пазлу</div>
+    <div class="opt-row">
+      <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
+      <button class="opt"    data-g="4" onclick="setGrid(this,4)">4×4<small>16 шт</small></button>
+      <button class="opt"    data-g="5" onclick="setGrid(this,5)">5×5<small>25 шт</small></button>
+      <button class="opt"    data-g="6" onclick="setGrid(this,6)">6×6<small>36 шт</small></button>
+    </div>
+
+    <div class="sl">Режим гри</div>
+    <div class="modes">
+      <div class="mc on" data-m="classic" onclick="setMode(this,'classic')"><div class="mci">♾️</div><div class="mcn">Класичний</div><div class="mcd">Без обмежень часу</div></div>
+      <div class="mc" data-m="sprint" onclick="setMode(this,'sprint')"><div class="mci">⚡</div><div class="mcn">Спринт</div><div class="mcd">3 хвилини</div></div>
+      <div class="mc" data-m="blitz" onclick="setMode(this,'blitz')"><div class="mci">🔥</div><div class="mcn">Бліц</div><div class="mcd">90 секунд</div></div>
+      <div class="mc" data-m="zen" onclick="setMode(this,'zen')"><div class="mci">🌸</div><div class="mcn">Дзен</div><div class="mcd">Без поспіху</div></div>
+    </div>
+
+    <div class="sl">Тема</div>
+    <div class="themes-grid" id="themesGrid"></div>
   </div>
 
-  <div class="sl">Режим гри</div>
-  <div class="modes">
-    <div class="mc on" data-m="classic" onclick="setMode(this,'classic')"><div class="mci">♾️</div><div class="mcn">Класичний</div><div class="mcd">Без обмежень часу</div></div>
-    <div class="mc" data-m="sprint" onclick="setMode(this,'sprint')"><div class="mci">⚡</div><div class="mcn">Спринт</div><div class="mcd">3 хвилини</div></div>
-    <div class="mc" data-m="blitz" onclick="setMode(this,'blitz')"><div class="mci">🔥</div><div class="mcn">Бліц</div><div class="mcd">90 секунд</div></div>
-    <div class="mc" data-m="zen" onclick="setMode(this,'zen')"><div class="mci">🌸</div><div class="mcn">Дзен</div><div class="mcd">Без поспіху</div></div>
-  </div>
-
-  <div class="sl">Тема</div>
-  <div class="themes-grid" id="themesGrid"></div>
-
-  <button class="btn btn-g" id="startBtn" disabled onclick="startGame(null)">Зібрати пазл 🧩</button>
-
-  <div class="scbox">
-    <h3>🏆 Рекорди</h3>
-    <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
-  </div>
-  <button class="btn btn-reset" onclick="resetAll()" style="margin-top:14px">🗑 Скинути все</button>
 </div>
 
 <!-- GAME -->
@@ -496,8 +547,9 @@ function buildBoard() {
   var n = gridN;
   var vvW = (window.visualViewport ? window.visualViewport.width  : window.innerWidth);
   var vvH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-  var maxW = Math.min(vvW - 20, 560);
-  var maxH = Math.min(vvH - 195, 700);
+  var isDesktop = vvW >= 700;
+  var maxW = isDesktop ? Math.min(vvW * 0.55, 760) : Math.min(vvW - 20, 560);
+  var maxH = isDesktop ? Math.min(vvH - 140, 820) : Math.min(vvH - 195, 700);
   var ratio = (imgNatW > 0 && imgNatH > 0) ? imgNatW / imgNatH : 1;
 
   var bW, bH;
