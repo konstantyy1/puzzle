@@ -127,59 +127,54 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .abtn{flex:1;padding:11px;font-size:13px;border-radius:12px;background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.72);cursor:pointer;transition:all .15s}
 .abtn:active{transform:scale(.95);background:var(--glass)}
 
+/* Columns — default (mobile): stack vertically, inherit from #home flex */
+.home-left{display:contents}
+.home-right{display:contents}
+
 /* ═══ DESKTOP LAYOUT (≥700px) ═══ */
 @media (min-width:700px) {
-  /* HOME: two-column layout */
   #home{
-    flex-direction:row;
-    align-items:flex-start;
+    display:grid;
+    grid-template-columns:340px 340px;
+    align-items:start;
     justify-content:center;
-    padding:30px 40px 40px;
-    gap:32px;
+    padding:30px 20px 40px;
+    column-gap:28px;
     overflow-y:auto;
     min-height:100vh;
   }
   .home-left{
-    flex:0 0 340px;
-    width:340px;
     display:flex;
+    grid-column:1;
+    grid-row:1;
     flex-direction:column;
     align-items:center;
+    width:340px;
     position:sticky;
     top:20px;
   }
-  .home-left .logo{ font-size:48px }
-  .home-left h1{ font-size:24px }
-  .home-left .tagline{ margin-bottom:16px }
-  .home-left .upload-box{ max-width:340px; min-height:160px }
-  .home-left .upload-box img{ max-height:240px }
-  .home-left .btn{ max-width:340px }
-  .home-left .scbox{ max-width:340px }
-  .home-left .btn-reset{ max-width:340px }
-
   .home-right{
-    flex:0 0 340px;
-    width:340px;
     display:flex;
+    grid-column:2;
+    grid-row:1;
     flex-direction:column;
     align-items:flex-start;
-    padding-top:4px;
+    width:340px;
   }
-  .home-right .sl{ max-width:340px }
-  .home-right .opt-row{ max-width:340px }
-  .home-right .modes{ max-width:340px }
-  .home-right .themes-grid{ max-width:340px }
-
-  /* GAME: larger board on wide screens */
-  #gs{
-    justify-content:flex-start;
-    align-items:center;
-    padding:16px 24px 24px;
-  }
-  .gh{ max-width:820px }
-  .pgw{ max-width:820px }
-  .board-wrap{ max-width:820px }
-  .abar{ max-width:500px }
+  .home-left .logo{font-size:48px}
+  .home-left h1{font-size:24px}
+  .home-left .upload-box,
+  .home-left .btn,
+  .home-left .scbox,
+  .home-left .btn-reset{width:100%;max-width:340px}
+  .home-left .upload-box img{max-height:240px}
+  .home-right .sl,
+  .home-right .opt-row,
+  .home-right .modes,
+  .home-right .themes-grid{width:100%;max-width:340px}
+  #gs{align-items:center;padding:16px 24px 24px}
+  .gh,.pgw,.board-wrap{max-width:820px}
+  .abar{max-width:500px}
 }
 
 /* WIN */
