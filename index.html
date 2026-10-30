@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>🧩 Пазл</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 /* ═══ VARIABLES ═══ */
 :root{
@@ -475,7 +476,18 @@ let imgNatW=0, imgNatH=0;
 let boardW=0, boardH=0, pieceW=0, pieceH=0, pad=0;
 
 /* ── INIT ── */
-window.addEventListener('load', () => { renderScores(); tryRestore(); });
+window.addEventListener('load', () => {
+  /* Telegram Mini App init */
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); /* full screen */
+    tg.disableVerticalSwipes?.(); /* prevent accidental close */
+    /* Apply Telegram theme colors if available */
+    if (tg.colorScheme === 'dark') document.body.style.background = '#0a0a14';
+  }
+  renderScores(); tryRestore();
+});
 
 /* Fix: change photo button stops propagation correctly */
 document.getElementById('changePhotoBtn').addEventListener('click', e => {
@@ -732,7 +744,7 @@ function handleClick(slot) {
   const el = document.querySelector(`.pc[data-slot="${slot}"]`);
   if (sel === null) {
     sel = slot; el?.classList.add('sel');
-    if (navigator.vibrate) navigator.vibrate(15);
+    haptic('light');
     return;
   }
   if (sel === slot) { el?.classList.remove('sel'); sel=null; return; }
@@ -744,7 +756,7 @@ function swapSlots(a, b) {
   [pieces[a], pieces[b]] = [pieces[b], pieces[a]];
   moves++;
   document.getElementById('mv').textContent = moves;
-  if (navigator.vibrate) navigator.vibrate([18,8,18]);
+  haptic('medium');
   removePiece(a); removePiece(b);
   spawnPiece(a);  spawnPiece(b);
   updateProg();
@@ -828,6 +840,7 @@ function onWin() {
   document.getElementById('rb').style.display= isRec ? 'block' : 'none';
 
   showScreen('ws'); spawnConfetti(true); renderScores();
+  haptic('success');
 }
 
 function playAgain() {
@@ -955,7 +968,19 @@ function makeShuffled(n) {
   while (a.every((v,i)=>v===i)) shuffleArr(a);
   return a;
 }
-function shuffleArr(a) {
+function haptic(type) {
+  /* Telegram haptic first, fallback to vibrate */
+  const tg = window.Telegram?.WebApp;
+  if (tg?.HapticFeedback) {
+    if (type === 'light')  tg.HapticFeedback.impactOccurred('light');
+    if (type === 'medium') tg.HapticFeedback.impactOccurred('medium');
+    if (type === 'success')tg.HapticFeedback.notificationOccurred('success');
+  } else if (navigator.vibrate) {
+    if (type === 'light')  navigator.vibrate(15);
+    if (type === 'medium') navigator.vibrate([18,8,18]);
+    if (type === 'success')navigator.vibrate([30,20,30,20,60]);
+  }
+}
   for (let i=a.length-1; i>0; i--) {
     const j=Math.floor(Math.random()*(i+1));
     [a[i],a[j]]=[a[j],a[i]];
