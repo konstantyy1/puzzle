@@ -335,9 +335,8 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
       <button class="xbtn" id="changePhotoBtn">Змінити 🔄</button>
     </div>
   </div>
-  <input type="file" id="fi" accept="image/*">
-
-  <!-- GRID SIZE -->
+  <!-- hidden inputs removed — dynamic inputs created in triggerUpload() -->
+  
   <div class="sl">Розмір пазлу</div>
   <div class="opt-row">
     <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
@@ -431,8 +430,7 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
     <div class="ico">📷</div>
     <h2>Змінити фото?</h2>
     <p>Поточний прогрес буде збережено</p>
-    <input type="file" id="gfi" accept="image/*">
-    <button class="btn btn-g" onclick="document.getElementById('gfi').click()">Обрати нове фото</button>
+    <button class="btn btn-g" onclick="triggerGameUpload()">Обрати нове фото</button>
     <button class="btn btn-o" style="max-width:100%;margin-top:0" onclick="closePhotoModal()">Скасувати</button>
   </div>
 </div>
@@ -505,25 +503,6 @@ document.getElementById('changePhotoBtn').addEventListener('click', e => {
   triggerUpload();
 });
 
-/* ── FILE INPUTS ── */
-document.getElementById('fi').addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  readFile(f, url => { imgURL=url; loadImgDimensions(url, ()=>showPhotoHome(url)); });
-  e.target.value = '';
-});
-document.getElementById('gfi').addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  readFile(f, url => {
-    imgURL = url; closePhotoModal(); clearSave();
-    loadImgDimensions(url, () => {
-      pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
-      buildBoard();
-      showToast('📷 Нове фото!');
-    });
-  });
-  e.target.value = '';
-});
-
 function readFile(file, cb) {
   const r = new FileReader();
   r.onload = ev => cb(ev.target.result);
@@ -544,7 +523,46 @@ function loadImgDimensions(url, cb) {
   tmp.src = url;
   if (tmp.complete && tmp.naturalWidth > 0) { imgNatW=tmp.naturalWidth; imgNatH=tmp.naturalHeight; cb(); }
 }
-function triggerUpload() { document.getElementById('fi').click(); }
+function triggerUpload() {
+  /* Telegram WebView blocks programmatic .click() on hidden inputs.
+     Solution: create a fresh input, append to body, click immediately
+     inside the same user gesture callstack. */
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px';
+  input.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) readFile(f, url => { imgURL=url; loadImgDimensions(url, ()=>showPhotoHome(url)); });
+    document.body.removeChild(input);
+  });
+  input.addEventListener('cancel', () => { try{ document.body.removeChild(input); }catch(e){} });
+  document.body.appendChild(input);
+  input.click();
+}
+
+function triggerGameUpload() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px';
+  input.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) {
+      readFile(f, url => {
+        imgURL = url; closePhotoModal(); clearSave();
+        loadImgDimensions(url, () => {
+          pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
+          buildBoard(); showToast('📷 Нове фото!');
+        });
+      });
+    }
+    document.body.removeChild(input);
+  });
+  input.addEventListener('cancel', () => { try{ document.body.removeChild(input); }catch(e){} });
+  document.body.appendChild(input);
+  input.click();
+}
 
 /* ── SELECTORS ── */
 function setGrid(btn, n) {
