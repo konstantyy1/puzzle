@@ -2,10 +2,11 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>🧩 Пазл</title>
+<meta name="theme-color" content="#0a0a14">
+<title>🧩 Photo Puzzle</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 /* ═══ VARIABLES ═══ */
@@ -15,6 +16,7 @@
   --card:rgba(255,255,255,.07); --glass:rgba(255,255,255,.11); --brd:rgba(255,255,255,.13);
   --sh:0 8px 32px rgba(124,58,237,.35);
   --g1c:#7c3aed; --g2c:#2563eb; --g3c:#06b6d4;
+  --safe-top:0px; --safe-bottom:0px;
 }
 /* ── THEME VARIABLES (override per theme) ── */
 body.t-neon   { --a1:#00ff88; --a2:#00ccff; --a3:#ff00aa; --g1c:#00ff88; --g2c:#00ccff; --g3c:#ff00aa; }
@@ -25,8 +27,13 @@ body.t-rose   { --a1:#f43f5e; --a2:#ec4899; --a3:#a855f7; --g1c:#f43f5e; --g2c:#
 
 /* ── RESET ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
-html,body{width:100%;overflow-x:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100dvh;color:#fff;transition:--a1 .4s,--a2 .4s}
+html,body{width:100%;height:100%;overflow-x:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);min-height:100dvh;color:#fff;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+}
 
 /* ── BG GLOW ── */
 .bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -481,10 +488,13 @@ window.addEventListener('load', () => {
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand(); /* full screen */
-    tg.disableVerticalSwipes?.(); /* prevent accidental close */
-    /* Apply Telegram theme colors if available */
-    if (tg.colorScheme === 'dark') document.body.style.background = '#0a0a14';
+    tg.expand();
+    tg.disableVerticalSwipes?.();
+    /* Use Telegram's safe area if available */
+    if (tg.safeAreaInset) {
+      document.documentElement.style.setProperty('--safe-top',    (tg.safeAreaInset.top    || 0) + 'px');
+      document.documentElement.style.setProperty('--safe-bottom', (tg.safeAreaInset.bottom || 0) + 'px');
+    }
   }
   renderScores(); tryRestore();
 });
@@ -622,10 +632,13 @@ function buildBoard() {
   document.getElementById('clipDefs').innerHTML = '';
 
   const n  = gridN;
-  /* Reserve space for: header(55) + progress(30) + action bar(55) + padding(30) + knob overflow(~50) */
-  const reserved = 220;
-  const maxW = Math.min(window.innerWidth - 22, 560);
-  const maxH = Math.min(window.innerHeight - reserved, 680);
+  /* Use visualViewport for accurate size in Telegram Mini App */
+  const vvW = window.visualViewport ? window.visualViewport.width  : window.innerWidth;
+  const vvH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  /* Reserve space for: header(55) + progress(30) + action bar(55) + margins(40) + knob overflow */
+  const reserved = 195;
+  const maxW = Math.min(vvW - 20, 560);
+  const maxH = Math.min(vvH - reserved, 700);
   const ratio = (imgNatW > 0 && imgNatH > 0) ? imgNatW / imgNatH : 1;
 
   let bW, bH;
