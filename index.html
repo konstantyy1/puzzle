@@ -35,8 +35,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 .screen{display:none;flex-direction:column;align-items:center;padding:14px 14px 30px;position:relative;z-index:1}
 .screen.active{display:flex}
-/* Home screen scrolls freely; game screen fills viewport */
-#home{min-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* Home and game have their own padding overrides */
+#home{padding:14px 14px 30px}
 #gs,#ws{min-height:100dvh;justify-content:flex-start}
 
 /* HOME */
@@ -127,54 +127,52 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .abtn{flex:1;padding:11px;font-size:13px;border-radius:12px;background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.72);cursor:pointer;transition:all .15s}
 .abtn:active{transform:scale(.95);background:var(--glass)}
 
-/* Columns — default (mobile): stack vertically, inherit from #home flex */
-.home-left{display:contents}
-.home-right{display:contents}
+/* Columns base — mobile: both are regular flex columns inside #home */
+.home-left{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:100%;
+  max-width:380px;
+}
+.home-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  width:100%;
+  max-width:380px;
+}
 
-/* ═══ DESKTOP LAYOUT (≥700px) ═══ */
-@media (min-width:700px) {
+/* ═══ DESKTOP LAYOUT (≥720px) ═══ */
+@media (min-width:720px) {
   #home{
-    display:grid;
-    grid-template-columns:340px 340px;
-    align-items:start;
+    flex-direction:row;
+    align-items:flex-start;
     justify-content:center;
-    padding:30px 20px 40px;
-    column-gap:28px;
+    padding:28px 24px 40px;
+    gap:28px;
     overflow-y:auto;
     min-height:100vh;
   }
   .home-left{
-    display:flex;
-    grid-column:1;
-    grid-row:1;
-    flex-direction:column;
-    align-items:center;
-    width:340px;
+    flex:0 0 320px;
+    max-width:320px;
     position:sticky;
     top:20px;
   }
   .home-right{
-    display:flex;
-    grid-column:2;
-    grid-row:1;
-    flex-direction:column;
-    align-items:flex-start;
-    width:340px;
+    flex:0 0 320px;
+    max-width:320px;
   }
-  .home-left .logo{font-size:48px}
-  .home-left h1{font-size:24px}
-  .home-left .upload-box,
-  .home-left .btn,
-  .home-left .scbox,
-  .home-left .btn-reset{width:100%;max-width:340px}
-  .home-left .upload-box img{max-height:240px}
-  .home-right .sl,
-  .home-right .opt-row,
-  .home-right .modes,
-  .home-right .themes-grid{width:100%;max-width:340px}
-  #gs{align-items:center;padding:16px 24px 24px}
+  .home-left .logo{font-size:46px}
+  .home-left h1{font-size:22px}
+  .home-left .upload-box{max-width:320px;min-height:150px}
+  .home-left .upload-box img{max-height:230px}
+  .home-left .btn,.home-left .scbox,.home-left .btn-reset{max-width:320px;width:100%}
+  .home-right .sl,.home-right .opt-row,.home-right .modes,.home-right .themes-grid{max-width:320px;width:100%}
+  #gs{align-items:center;padding:14px 20px 20px}
   .gh,.pgw,.board-wrap{max-width:820px}
-  .abar{max-width:500px}
+  .abar{max-width:480px}
 }
 
 /* WIN */
