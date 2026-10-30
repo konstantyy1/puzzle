@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🧩 Пазл для коханої</title>
+<style>
+:root{
+  --pk:#ff6b9d;--pu:#c44dff;--bl:#4dc8ff;
+  --bg:#0f0720;--bg2:#1a0f35;
+  --card:rgba(255,255,255,.08);--glass:rgba(255,255,255,.13);--brd:rgba(255,255,255,.14);
+  --sh:0 8px 40px rgba(196,77,255,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{width:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100dvh;color:#fff}
+
+.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.3;animation:gmove 14s ease-in-out infinite alternate}
+.g1{width:420px;height:420px;background:var(--pu);top:-120px;left:-100px}
+.g2{width:360px;height:360px;background:var(--pk);bottom:-80px;right:-80px;animation-delay:-5s}
+.g3{width:280px;height:280px;background:var(--bl);top:45%;left:55%;animation-delay:-9s}
+@keyframes gmove{0%{transform:translate(0,0)}100%{transform:translate(30px,25px) scale(1.1)}}
+
+.screen{display:none;flex-direction:column;align-items:center;min-height:100dvh;padding:22px 15px 55px;position:relative;z-index:1}
+.screen.active{display:flex}
+
+/* HOME */
+.logo{font-size:62px;margin-bottom:2px;animation:flt 3s ease-in-out infinite}
+@keyframes flt{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+h1{font-size:28px;font-weight:900;text-align:center;margin-bottom:4px;
+   background:linear-gradient(90deg,var(--pk),var(--pu),var(--bl));
+   -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:rgba(255,255,255,.45);font-size:14px;margin-bottom:26px;text-align:center}
+
+.upload-box{
+  width:100%;max-width:360px;position:relative;min-height:130px;
+  border:2px dashed rgba(255,107,157,.4);border-radius:20px;
+  background:var(--card);backdrop-filter:blur(12px);
+  overflow:hidden;cursor:pointer;transition:all .25s;margin-bottom:18px;
+  display:flex;align-items:center;justify-content:center;
+}
+.upload-box:active{transform:scale(.98);border-color:var(--pk)}
+.upload-ph{text-align:center;padding:24px 18px}
+.upload-ph .uico{font-size:42px;margin-bottom:6px}
+.upload-ph p{color:rgba(255,255,255,.6);font-size:13px;line-height:1.5}
+.upload-ph strong{color:var(--pk)}
+.upload-box img{width:100%;max-height:200px;object-fit:cover;display:none}
+.upload-bar{
+  position:absolute;bottom:0;left:0;right:0;display:none;
+  background:linear-gradient(transparent,rgba(0,0,0,.7));
+  padding:10px 14px 12px;flex-direction:row;align-items:center;justify-content:space-between;
+}
+.upload-bar.on{display:flex}
+.xbtn{background:rgba(255,255,255,.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);
+      border-radius:18px;color:#fff;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer}
+.xbtn:active{background:rgba(255,255,255,.25)}
+#fi,#gfi{display:none}
+
+.sl{font-size:11px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:1.3px;
+    margin-bottom:7px;align-self:flex-start;width:100%;max-width:360px}
+
+.opt-row{display:flex;gap:7px;width:100%;max-width:360px;margin-bottom:16px}
+.opt{flex:1;padding:10px 4px;border-radius:13px;border:2px solid var(--brd);
+     background:var(--card);backdrop-filter:blur(8px);
+     color:rgba(255,255,255,.6);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;
+     display:flex;flex-direction:column;align-items:center;gap:1px}
+.opt small{font-size:10px;font-weight:400;opacity:.55}
+.opt.on{border-color:var(--pk);background:linear-gradient(135deg,rgba(255,107,157,.22),rgba(196,77,255,.22));color:#fff}
+.opt:active{transform:scale(.95)}
+
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;max-width:360px;margin-bottom:16px}
+.mc{border-radius:15px;border:2px solid var(--brd);background:var(--card);backdrop-filter:blur(10px);
+    padding:13px 10px;cursor:pointer;transition:all .22s;
+    display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.mc .mci{font-size:28px}
+.mc .mcn{font-size:12px;font-weight:700}
+.mc .mcd{font-size:10px;color:rgba(255,255,255,.4);line-height:1.3}
+.mc.on{border-color:var(--bl);background:linear-gradient(135deg,rgba(77,200,255,.18),rgba(196,77,255,.18))}
+.mc:active{transform:scale(.95)}
+
+.thr{display:flex;gap:7px;width:100%;max-width:360px;margin-bottom:20px;overflow-x:auto;padding-bottom:3px}
+.thr::-webkit-scrollbar{display:none}
+.tp{flex-shrink:0;padding:7px 13px;border-radius:18px;border:1.5px solid var(--brd);
+    background:var(--card);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;
+    transition:all .2s;white-space:nowrap}
+.tp.on{border-color:var(--pu);background:linear-gradient(135deg,rgba(196,77,255,.25),rgba(255,107,157,.18));color:#fff}
+.tp:active{transform:scale(.94)}
+
+.btn{width:100%;max-width:360px;padding:15px;border-radius:15px;border:none;
+     font-size:15px;font-weight:800;cursor:pointer;transition:all .2s}
+.btn-g{background:linear-gradient(135deg,var(--pk),var(--pu));color:#fff;box-shadow:0 4px 22px rgba(255,107,157,.4)}
+.btn-g:disabled{opacity:.35;box-shadow:none}
+.btn-g:active:not(:disabled){transform:scale(.97)}
+.btn-o{background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);
+       color:rgba(255,255,255,.75);margin-top:9px}
+.btn-o:active{transform:scale(.97)}
+
+.scbox{width:100%;max-width:360px;margin-top:18px;background:var(--card);backdrop-filter:blur(10px);
+       border:1px solid var(--brd);border-radius:17px;padding:13px 15px}
+.scbox h3{font-size:11px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px}
+.scr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;
+     border-bottom:1px solid rgba(255,255,255,.06)}
+.scr:last-child{border:none}
+.scr .sm{font-size:12px;color:rgba(255,255,255,.7)}
+.scr .sv{font-size:12px;color:var(--pk);font-weight:700}
+.nosc{font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:8px 0}
+
+/* GAME */
+#gs{padding:10px 10px 28px;justify-content:flex-start}
+.gh{width:100%;max-width:580px;display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.ib{width:38px;height:38px;border-radius:11px;border:1px solid var(--brd);
+    background:var(--glass);backdrop-filter:blur(8px);color:#fff;font-size:20px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ib:active{background:rgba(255,255,255,.2);transform:scale(.92)}
+.st{display:flex;gap:6px}
+.pill{background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--brd);
+      border-radius:18px;padding:5px 11px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px}
+.pill .pv{color:var(--pk)}
+.pill.warn .pv{color:#ffa502}
+.pill.danger .pv{color:#ff4757}
+
+.pgw{width:100%;max-width:580px;margin-bottom:8px}
+.pgbg{width:100%;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.pgf{height:100%;border-radius:3px;transition:width .4s ease;background:linear-gradient(90deg,var(--pk),var(--pu))}
+.pgl{font-size:11px;color:rgba(255,255,255,.32);margin-top:3px;text-align:right}
+
+.board-wrap{width:100%;max-width:580px;display:flex;justify-content:center;margin-bottom:10px}
+
+/* PUZZLE PIECE — CSS approach */
+#board{position:relative;touch-action:none;user-select:none}
+.pc{
+  position:absolute;cursor:pointer;overflow:visible;
+  transition:filter .18s, transform .18s;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
+}
+.pc.sel{
+  filter:drop-shadow(0 0 14px var(--pk)) drop-shadow(0 0 6px rgba(255,107,157,.9));
+  transform:scale(1.07);z-index:20;
+}
+.pc.ok{filter:drop-shadow(0 0 8px rgba(67,233,123,.7))}
+
+.abar{display:flex;gap:7px;width:100%;max-width:360px}
+.abtn{flex:1;padding:11px;font-size:13px;border-radius:13px;background:var(--card);
+      backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.75);cursor:pointer}
+.abtn:active{transform:scale(.96)}
+
+/* WIN */
+#ws{justify-content:center}
+.cf-wrap{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.cfp{position:absolute;border-radius:2px;animation:cff linear forwards;top:-20px}
+@keyframes cff{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+.wcard{position:relative;z-index:1;background:rgba(255,255,255,.09);backdrop-filter:blur(20px);
+       border:1px solid var(--brd);border-radius:26px;padding:26px 22px;width:100%;max-width:340px;text-align:center}
+.we{font-size:68px;animation:pop .5s cubic-bezier(.36,2,.58,1) both}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.wt{font-size:26px;font-weight:900;margin:10px 0 3px;
+    background:linear-gradient(90deg,var(--pk),var(--pu));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.wsub{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:16px}
+.wsts{display:flex;gap:9px;justify-content:center;margin-bottom:18px}
+.wst{background:rgba(255,255,255,.07);border-radius:13px;padding:11px 14px;min-width:76px}
+.wst .wn{font-size:22px;font-weight:800;color:var(--pk)}
+.wst .wl{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.rec-badge{background:linear-gradient(135deg,rgba(255,107,157,.28),rgba(196,77,255,.28));
+           border:1px solid rgba(255,107,157,.4);border-radius:11px;padding:7px 13px;
+           font-size:12px;font-weight:700;color:var(--pk);margin-bottom:13px;
+           animation:rpls 1.2s ease-in-out infinite alternate;display:none}
+@keyframes rpls{0%{box-shadow:0 0 6px rgba(255,107,157,.25)}100%{box-shadow:0 0 20px rgba(255,107,157,.6)}}
+.wcard .btn{max-width:100%;margin-bottom:7px}
+.wcard .btn:last-child{margin-bottom:0}
+
+/* COUNTDOWN */
+#cov{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;
+     background:rgba(10,5,20,.88);backdrop-filter:blur(10px)}
+#cov.on{display:flex}
+.cnum{font-size:110px;font-weight:900;
+      background:linear-gradient(135deg,var(--pk),var(--pu));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      animation:cpop .75s cubic-bezier(.36,2,.58,1) both}
+@keyframes cpop{0%{transform:scale(2.5);opacity:0}70%{transform:scale(.9)}100%{transform:scale(1);opacity:1}}
+
+/* MODAL */
+.modal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
+       background:rgba(10,5,20,.88);backdrop-filter:blur(12px)}
+.modal.on{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--brd);border-radius:22px;
+           padding:22px;width:90%;max-width:300px;text-align:center}
+.modal-box .ico{font-size:38px;margin-bottom:8px}
+.modal-box h2{font-size:17px;font-weight:700;margin-bottom:5px}
+.modal-box p{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:18px}
+.modal-box .btn{max-width:100%;margin-bottom:8px}
+.modal-box .btn:last-child{margin-bottom:0}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;left:50%;
+       transform:translateX(-50%) translateY(80px);
+       background:linear-gradient(135deg,var(--pk),var(--pu));
+       color:#fff;font-size:13px;font-weight:700;padding:9px 20px;border-radius:22px;
+       box-shadow:var(--sh);transition:transform .35s cubic-bezier(.36,2,.58,1);
+       z-index:300;pointer-events:none}
+.toast.on{transform:translateX(-50%) translateY(0)}
+
+/* THEMES */
+body.t-neon   .g1{background:#00ff88}body.t-neon   .g2{background:#00ccff}body.t-neon   .pgf{background:linear-gradient(90deg,#00ff88,#00ccff)}
+body.t-sunset .g1{background:#ff6b35}body.t-sunset .g2{background:#ff9f43}body.t-sunset .g3{background:#ff4757}
+body.t-ocean  .g1{background:#0099ff}body.t-ocean  .g2{background:#00e0ff}body.t-ocean  .g3{background:#7b2fff}
+body.t-cherry .g1{background:#ff2d55}body.t-cherry .g2{background:#ff6b9d}body.t-cherry .g3{background:#c44dff}
+
+/* hidden SVG defs */
+#svgDefs{position:absolute;width:0;height:0;overflow:hidden}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
+<svg id="svgDefs" xmlns="http://www.w3.org/2000/svg"><defs id="clipDefs"></defs></svg>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="logo">🧩</div>
+  <h1>Пазл для коханої</h1>
+  <p class="tagline">Завантаж фото — збери по шматочках 💕</p>
+
+  <div class="upload-box" id="ub" onclick="triggerUpload()">
+    <div class="upload-ph" id="uph">
+      <div class="uico">📷</div>
+      <p><strong>Натисни, щоб обрати фото</strong><br>з галереї або камери</p>
+    </div>
+    <img id="prev" alt="">
+    <div class="upload-bar" id="ubar">
+      <span style="font-size:12px;color:rgba(255,255,255,.75)">✓ Фото обрано</span>
+      <button class="xbtn" onclick="event.stopPropagation();triggerUpload()">Змінити 🔄</button>
+    </div>
+  </div>
+  <input type="file" id="fi" accept="image/*">
+
+  <div class="sl">Розмір пазлу</div>
+  <div class="opt-row">
+    <button class="opt on" data-g="3" onclick="setGrid(this,3)">3×3<small>9 шт</small></button>
+    <button class="opt"    data-g="4" onclick="setGrid(this,4)">4×4<small>16 шт</small></button>
+    <button class="opt"    data-g="5" onclick="setGrid(this,5)">5×5<small>25 шт</small></button>
+    <button class="opt"    data-g="6" onclick="setGrid(this,6)">6×6<small>36 шт</small></button>
+  </div>
+
+  <div class="sl">Режим гри</div>
+  <div class="modes">
+    <div class="mc on" data-m="classic" onclick="setMode(this,'classic')">
+      <div class="mci">♾️</div><div class="mcn">Класичний</div><div class="mcd">Без обмежень часу</div>
+    </div>
+    <div class="mc" data-m="sprint" onclick="setMode(this,'sprint')">
+      <div class="mci">⚡</div><div class="mcn">Спринт</div><div class="mcd">3 хвилини</div>
+    </div>
+    <div class="mc" data-m="blitz" onclick="setMode(this,'blitz')">
+      <div class="mci">🔥</div><div class="mcn">Бліц</div><div class="mcd">90 секунд</div>
+    </div>
+    <div class="mc" data-m="zen" onclick="setMode(this,'zen')">
+      <div class="mci">🌸</div><div class="mcn">Дзен</div><div class="mcd">Без спіши</div>
+    </div>
+  </div>
+
+  <div class="sl">Тема</div>
+  <div class="thr">
+    <div class="tp on" data-t=""       onclick="setTheme(this,'')">🌙 Дефолт</div>
+    <div class="tp"    data-t="neon"   onclick="setTheme(this,'neon')">⚡ Неон</div>
+    <div class="tp"    data-t="sunset" onclick="setTheme(this,'sunset')">🌅 Захід</div>
+    <div class="tp"    data-t="ocean"  onclick="setTheme(this,'ocean')">🌊 Океан</div>
+    <div class="tp"    data-t="cherry" onclick="setTheme(this,'cherry')">🍒 Вишня</div>
+  </div>
+
+  <button class="btn btn-g" id="startBtn" disabled onclick="startGame(null)">Зібрати пазл 🧩</button>
+
+  <div class="scbox">
+    <h3>🏆 Рекорди</h3>
+    <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gs" class="screen">
+  <div class="gh">
+    <button class="ib" onclick="goHome()">‹</button>
+    <div class="st">
+      <div class="pill" id="mp">🔀 <span class="pv" id="mv">0</span></div>
+      <div class="pill" id="tp2">⏱ <span class="pv" id="tv">0:00</span></div>
+    </div>
+    <button class="ib" onclick="reshuffleBoard()">🔀</button>
+  </div>
+  <div class="pgw">
+    <div class="pgbg"><div class="pgf" id="pgf" style="width:0%"></div></div>
+    <div class="pgl" id="pgl">0 / 0</div>
+  </div>
+  <div class="board-wrap"><div id="board"></div></div>
+  <div class="abar">
+    <button class="abtn" onclick="openPhotoModal()">📷 Змінити фото</button>
+    <button class="abtn" onclick="goHome()">🏠 Додому</button>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="ws" class="screen">
+  <div class="cf-wrap" id="cfw"></div>
+  <div class="wcard">
+    <div class="we" id="we">🎉</div>
+    <div class="wt" id="wt">Молодець!</div>
+    <p class="wsub" id="wsub">Пазл зібрано!</p>
+    <div class="rec-badge" id="rb">🏆 НОВИЙ РЕКОРД!</div>
+    <div class="wsts">
+      <div class="wst"><div class="wn" id="wm">0</div><div class="wl">ходів</div></div>
+      <div class="wst"><div class="wn" id="wti">0:00</div><div class="wl">часу</div></div>
+      <div class="wst"><div class="wn" id="wg">3×3</div><div class="wl">розмір</div></div>
+    </div>
+    <button class="btn btn-g" onclick="playAgain()" style="margin-bottom:9px">Ще раз 🔁</button>
+    <button class="btn btn-o" onclick="goHome()" style="max-width:100%;margin-top:0">Нове фото 📷</button>
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="cov"><div class="cnum" id="cnum">3</div></div>
+
+<!-- PHOTO MODAL -->
+<div class="modal" id="pmodal">
+  <div class="modal-box">
+    <div class="ico">📷</div>
+    <h2>Змінити фото?</h2>
+    <p>Поточний прогрес збережеться</p>
+    <input type="file" id="gfi" accept="image/*">
+    <button class="btn btn-g" onclick="document.getElementById('gfi').click()">Обрати нове фото</button>
+    <button class="btn btn-o" style="max-width:100%;margin-top:0" onclick="closePhotoModal()">Скасувати</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   PUZZLE GAME — v4
+   Image rendering: pure CSS background-image + SVG clipPath
+   No canvas drawImage — 100% reliable on all browsers/iOS
+═══════════════════════════════════════════════════════ */
+
+const SAVE_KEY  = 'pzl_v7';
+const SCORE_KEY = 'pzl_sc_v4';
+const MODE_TIME = { classic:0, sprint:180, blitz:90, zen:0 };
+/* Jigsaw knob proportions — classic symmetric */
+const KH = 0.30;  /* knob height / piece size */
+const KW = 0.38;  /* knob width  / piece size */
+
+/* ── STATE ── */
+let imgURL=null, gridN=3, mode='classic', theme='';
+let pieces=[], sel=null, moves=0, secs=0;
+let timerID=null, gameAlive=false;
+let piecePx=0, pad=0, boardPx=0;
+
+/* ── INIT ── */
+window.addEventListener('load',()=>{ renderScores(); tryRestore(); });
+
+/* ── FILE INPUTS ── */
+document.getElementById('fi').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  readFile(f,url=>{ imgURL=url; showPhotoHome(url); });
+  e.target.value='';
+});
+document.getElementById('gfi').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  readFile(f,url=>{
+    imgURL=url;
+    closePhotoModal();
+    clearSave();
+    pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
+    buildBoard();
+    showToast('📷 Нове фото!');
+  });
+  e.target.value='';
+});
+
+function readFile(file,cb){
+  const r=new FileReader();
+  r.onload=ev=>cb(ev.target.result);
+  r.readAsDataURL(file);
+}
+function showPhotoHome(url){
+  const img=document.getElementById('prev');
+  img.src=url; img.style.display='block';
+  document.getElementById('uph').style.display='none';
+  document.getElementById('ubar').classList.add('on');
+  document.getElementById('startBtn').disabled=false;
+}
+function triggerUpload(){ document.getElementById('fi').click(); }
+
+/* ── SELECTORS ── */
+function setGrid(btn,n){
+  document.querySelectorAll('[data-g]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); gridN=n;
+}
+function setMode(card,m){
+  document.querySelectorAll('[data-m]').forEach(c=>c.classList.remove('on'));
+  card.classList.add('on'); mode=m;
+}
+function setTheme(pill,t){
+  document.querySelectorAll('[data-t]').forEach(p=>p.classList.remove('on'));
+  pill.classList.add('on');
+  document.body.className=t?'t-'+t:''; theme=t;
+}
+
+/* ── NAV ── */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goHome(){
+  if(gameAlive){ saveGame(); stopTimer(); gameAlive=false; }
+  renderScores(); showScreen('home');
+}
+function openPhotoModal() { document.getElementById('pmodal').classList.add('on'); }
+function closePhotoModal(){ document.getElementById('pmodal').classList.remove('on'); }
+function modeStartSecs()  { return MODE_TIME[mode]||0; }
+
+/* ── START ── */
+function startGame(saved){
+  if(!imgURL) return;
+  showScreen('gs');
+  if(saved){
+    gridN=saved.gridN||3; mode=saved.mode||'classic';
+    theme=saved.theme||''; pieces=saved.pieces;
+    moves=saved.moves||0; secs=saved.secs||0;
+    document.body.className=theme?'t-'+theme:'';
+    buildBoard();
+    startTimer(); gameAlive=true;
+  } else {
+    pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
+    buildBoard();
+    runCountdown(()=>{ startTimer(); gameAlive=true; });
+  }
+}
+
+/* ══════════════════════════════════════════
+   JIGSAW EDGE ALGORITHM
+   Each shared edge gets one canonical ID.
+   right of (r,c) = +base;  left of (r,c+1) = -base  ✓
+   bottom of (r,c) = +base; top of (r+1,c)  = -base  ✓
+══════════════════════════════════════════ */
+function edgeSign(row,col,dir,n){
+  if(dir===0&&row===0)   return 0;
+  if(dir===1&&col===n-1) return 0;
+  if(dir===2&&row===n-1) return 0;
+  if(dir===3&&col===0)   return 0;
+  let eid,factor;
+  if(dir===1){ eid=row*(n-1)+col;           factor= 1; }
+  else if(dir===3){ eid=row*(n-1)+(col-1);  factor=-1; }
+  else if(dir===2){ eid=row*n+col+10000;    factor= 1; }
+  else            { eid=(row-1)*n+col+10000;factor=-1; }
+  const h=(eid*2654435761)>>>0;
+  return ((h&1)?1:-1)*factor;
+}
+
+/* ══════════════════════════════════════════
+   SVG PATH for jigsaw piece
+   Returns the 'd' attribute string.
+   x0,y0 = top-left corner of piece in SVG coords
+══════════════════════════════════════════ */
+function jigsawPath(x0,y0,S,eT,eR,eB,eL){
+  const x1=x0+S, y1=y0+S;
+  const mx=x0+S/2, my=y0+S/2;
+  const kh=S*KH, kw=S*KW;
+
+  let d=`M${x0},${y0}`;
+
+  /* TOP */
+  if(eT===0){ d+=` L${x1},${y0}`; }
+  else{
+    const a=mx-kw/2, b=mx+kw/2, k=y0-eT*kh;
+    d+=` L${a},${y0} C${a},${k} ${b},${k} ${b},${y0} L${x1},${y0}`;
+  }
+  /* RIGHT */
+  if(eR===0){ d+=` L${x1},${y1}`; }
+  else{
+    const a=my-kw/2, b=my+kw/2, k=x1+eR*kh;
+    d+=` L${x1},${a} C${k},${a} ${k},${b} ${x1},${b} L${x1},${y1}`;
+  }
+  /* BOTTOM */
+  if(eB===0){ d+=` L${x0},${y1}`; }
+  else{
+    const a=mx+kw/2, b=mx-kw/2, k=y1+eB*kh;
+    d+=` L${a},${y1} C${a},${k} ${b},${k} ${b},${y1} L${x0},${y1}`;
+  }
+  /* LEFT */
+  if(eL===0){ d+=` L${x0},${y0}`; }
+  else{
+    const a=my+kw/2, b=my-kw/2, k=x0-eL*kh;
+    d+=` L${x0},${a} C${k},${a} ${k},${b} ${x0},${b} L${x0},${y0}`;
+  }
+  d+=' Z';
+  return d;
+}
+
+/* ══════════════════════════════════════════
+   BUILD BOARD
+   Each piece = <svg> element with:
+   - <clipPath> containing jigsaw path
+   - <image> clipped to that path (uses imgURL directly!)
+   - <path> stroke overlay
+   No canvas, no drawImage — browser handles image rendering natively.
+══════════════════════════════════════════ */
+function buildBoard(){
+  const board=document.getElementById('board');
+  board.innerHTML='';
+  /* clear old SVG clip defs */
+  document.getElementById('clipDefs').innerHTML='';
+
+  const n=gridN;
+  const vw=Math.min(window.innerWidth-22,560);
+  piecePx=Math.floor(vw/n);
+  pad=Math.ceil(piecePx*KH)+4;
+  boardPx=piecePx*n;
+
+  board.style.width=boardPx+'px';
+  board.style.height=boardPx+'px';
+  board.style.position='relative';
+
+  document.getElementById('mv').textContent=moves;
+  updateTimerDisplay();
+  updateProg();
+
+  for(let slot=0;slot<n*n;slot++) spawnPiece(slot);
+  sel=null;
+}
+
+function spawnPiece(slot){
+  const n=gridN, S=piecePx, P=pad;
+  const tile=pieces[slot];
+  const tRow=Math.floor(tile/n), tCol=tile%n;
+  const sRow=Math.floor(slot/n), sCol=slot%n;
+
+  const eT=edgeSign(tRow,tCol,0,n);
+  const eR=edgeSign(tRow,tCol,1,n);
+  const eB=edgeSign(tRow,tCol,2,n);
+  const eL=edgeSign(tRow,tCol,3,n);
+
+  /* SVG viewport is (S+2*P) × (S+2*P).
+     Piece top-left inside SVG = (P, P).
+     Image is positioned so that tile (tCol,tRow) appears at (P,P). */
+  const svgW=S+2*P, svgH=S+2*P;
+
+  /* Image cover-fit the full board */
+  const bSz=S*n;
+  /* We'll set image width/height to boardPx, offset by tile position */
+  const imgX=P-tCol*S;
+  const imgY=P-tRow*S;
+
+  const clipId='cp_'+slot+'_'+Date.now();
+
+  /* Add clipPath to global SVG defs */
+  const defs=document.getElementById('clipDefs');
+  const cp=document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+  cp.setAttribute('id',clipId);
+  const pathEl=document.createElementNS('http://www.w3.org/2000/svg','path');
+  pathEl.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
+  cp.appendChild(pathEl);
+  defs.appendChild(cp);
+
+  /* Create SVG piece */
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('width',svgW);
+  svg.setAttribute('height',svgH);
+  svg.setAttribute('viewBox',`0 0 ${svgW} ${svgH}`);
+  svg.style.overflow='visible';
+
+  /* Image clipped to jigsaw shape */
+  const imgEl=document.createElementNS(ns,'image');
+  imgEl.setAttribute('href',imgURL);
+  imgEl.setAttribute('x',imgX);
+  imgEl.setAttribute('y',imgY);
+  imgEl.setAttribute('width',bSz);
+  imgEl.setAttribute('height',bSz);
+  imgEl.setAttribute('preserveAspectRatio','xMidYMid slice');
+  imgEl.setAttribute('clip-path',`url(#${clipId})`);
+  svg.appendChild(imgEl);
+
+  /* Vignette overlay clipped to same shape */
+  const vign=document.createElementNS(ns,'path');
+  vign.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
+  vign.setAttribute('fill','rgba(0,0,0,0.15)');
+  svg.appendChild(vign);
+
+  /* Border stroke */
+  const stroke=document.createElementNS(ns,'path');
+  stroke.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
+  stroke.setAttribute('fill','none');
+  stroke.setAttribute('stroke','rgba(255,255,255,0.3)');
+  stroke.setAttribute('stroke-width','1.5');
+  svg.appendChild(stroke);
+
+  /* Wrapper div */
+  const div=document.createElement('div');
+  div.className='pc';
+  if(tile===slot) div.classList.add('ok');
+  div.dataset.slot=slot;
+  div.style.left=(sCol*S-P)+'px';
+  div.style.top=(sRow*S-P)+'px';
+  div.style.width=svgW+'px';
+  div.style.height=svgH+'px';
+  div.appendChild(svg);
+
+  div.addEventListener('click',()=>handleClick(slot));
+  div.addEventListener('touchend',e=>{e.preventDefault();handleClick(slot);},{passive:false});
+
+  document.getElementById('board').appendChild(div);
+}
+
+function removePiece(slot){
+  const el=document.querySelector(`.pc[data-slot="${slot}"]`);
+  if(el){ el.remove(); }
+  /* remove clipPath */
+  document.querySelectorAll(`#clipDefs clipPath`).forEach(cp=>{
+    if(cp.id.startsWith('cp_'+slot+'_')) cp.remove();
+  });
+}
+
+/* ── CLICK / SWAP ── */
+function handleClick(slot){
+  if(!gameAlive) return;
+  if(sel===null){
+    sel=slot;
+    document.querySelector(`.pc[data-slot="${slot}"]`).classList.add('sel');
+    if(navigator.vibrate) navigator.vibrate(15);
+    return;
+  }
+  if(sel===slot){
+    document.querySelector(`.pc[data-slot="${slot}"]`).classList.remove('sel');
+    sel=null; return;
+  }
+  const prev=sel; sel=null;
+  swapSlots(prev,slot);
+}
+
+function swapSlots(a,b){
+  [pieces[a],pieces[b]]=[pieces[b],pieces[a]];
+  moves++;
+  document.getElementById('mv').textContent=moves;
+  if(navigator.vibrate) navigator.vibrate([18,8,18]);
+  removePiece(a); removePiece(b);
+  spawnPiece(a);  spawnPiece(b);
+  updateProg();
+  saveGame();
+  if(isSolved()) setTimeout(onWin,380);
+}
+
+/* ── RESHUFFLE ── */
+function reshuffleBoard(){
+  shuffleArr(pieces);
+  while(isSolved()) shuffleArr(pieces);
+  buildBoard(); saveGame();
+}
+
+/* ── PROGRESS ── */
+function updateProg(){
+  const total=gridN*gridN;
+  const ok=pieces.filter((v,i)=>v===i).length;
+  document.getElementById('pgf').style.width=Math.round(ok/total*100)+'%';
+  document.getElementById('pgl').textContent=ok+' / '+total+' шматочків';
+}
+
+/* ── TIMER ── */
+function startTimer(){
+  stopTimer(); updateTimerDisplay();
+  timerID=setInterval(()=>{
+    const down=(mode==='sprint'||mode==='blitz');
+    if(down){ secs--; if(secs<=0){ secs=0; updateTimerDisplay(); stopTimer(); onTimeOut(); return; } }
+    else secs++;
+    updateTimerDisplay();
+    const pill=document.getElementById('tp2');
+    if(down){
+      if(secs<=10)      pill.className='pill danger';
+      else if(secs<=30) pill.className='pill warn';
+      else              pill.className='pill';
+    }
+    if(secs%15===0) saveGame();
+  },1000);
+}
+function stopTimer(){ clearInterval(timerID); timerID=null; }
+function updateTimerDisplay(){ document.getElementById('tv').textContent=fmt(Math.abs(secs)); }
+
+function onTimeOut(){
+  gameAlive=false; stopTimer(); clearSave();
+  document.getElementById('we').textContent='⏰';
+  document.getElementById('wt').textContent='Час вийшов!';
+  document.getElementById('wsub').textContent='Спробуй ще — ти зможеш! 💪';
+  document.getElementById('wm').textContent=moves;
+  document.getElementById('wti').textContent=mode==='sprint'?'3:00':'1:30';
+  document.getElementById('wg').textContent=gridN+'×'+gridN;
+  document.getElementById('rb').style.display='none';
+  showScreen('ws'); spawnConfetti(false);
+}
+
+/* ── WIN ── */
+function onWin(){
+  gameAlive=false; stopTimer();
+  const isRec=saveBestScore(); clearSave();
+  const msgs=[
+    {e:'🎉',t:'Молодець!',s:'Ти зібрала пазл! 🥰'},
+    {e:'👑',t:'Королева!',s:'Неймовірно! 🌟'},
+    {e:'💖',t:'Чудово!',s:'Ти найкраща! 💕'},
+    {e:'🌟',t:'Зірочка!',s:'Ти перемогла пазл! ✨'},
+    {e:'🦋',t:'Магія!',s:'Красиво як ти сама 🌸'},
+    {e:'🍒',t:'Солодко!',s:'Нема нікого кращого 🍓'},
+  ];
+  const m=msgs[Math.floor(Math.random()*msgs.length)];
+  const elapsed=(mode==='sprint')?(180-secs):(mode==='blitz')?(90-secs):secs;
+  document.getElementById('we').textContent=m.e;
+  document.getElementById('wt').textContent=m.t;
+  document.getElementById('wsub').textContent=m.s;
+  document.getElementById('wm').textContent=moves;
+  document.getElementById('wti').textContent=fmt(elapsed);
+  document.getElementById('wg').textContent=gridN+'×'+gridN;
+  document.getElementById('rb').style.display=isRec?'block':'none';
+  showScreen('ws'); spawnConfetti(true); renderScores();
+}
+
+function playAgain(){
+  pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
+  showScreen('gs'); buildBoard();
+  runCountdown(()=>{ startTimer(); gameAlive=true; });
+}
+
+/* ── COUNTDOWN ── */
+function runCountdown(cb){
+  const ov=document.getElementById('cov');
+  const num=document.getElementById('cnum');
+  ov.classList.add('on'); let c=3;
+  function step(){
+    num.style.animation='none';
+    num.textContent=c>0?c:'🚀';
+    void num.offsetWidth;
+    num.style.animation='cpop .75s cubic-bezier(.36,2,.58,1) both';
+    if(c===0){ setTimeout(()=>{ ov.classList.remove('on'); cb(); },700); return; }
+    c--; setTimeout(step,900);
+  }
+  step();
+}
+
+/* ── CONFETTI ── */
+function spawnConfetti(happy){
+  const wrap=document.getElementById('cfw'); wrap.innerHTML='';
+  const cols=happy
+    ?['#ff6b9d','#c44dff','#ffdd57','#00e0ff','#ff9f43','#a8ff78','#ff6b35']
+    :['#ff4757','#ff6b81','#ffa502'];
+  for(let i=0;i<80;i++){
+    const el=document.createElement('div');
+    el.className='cfp';
+    el.style.left=Math.random()*100+'vw';
+    el.style.background=cols[Math.floor(Math.random()*cols.length)];
+    const s=6+Math.random()*12;
+    el.style.width=s+'px'; el.style.height=s+'px';
+    el.style.animationDuration=(1.5+Math.random()*3)+'s';
+    el.style.animationDelay=(Math.random()*1.5)+'s';
+    el.style.borderRadius=Math.random()>.5?'50%':'3px';
+    wrap.appendChild(el);
+  }
+}
+
+/* ── SCORES ── */
+function saveBestScore(){
+  try{
+    const raw=localStorage.getItem(SCORE_KEY);
+    const sc=raw?JSON.parse(raw):{};
+    const key=gridN+'x'+gridN+'_'+mode;
+    const elapsed=(mode==='sprint')?(180-secs):(mode==='blitz')?(90-secs):secs;
+    const prev=sc[key];
+    const isNew=!prev||moves<prev.moves||(moves===prev.moves&&elapsed<prev.time);
+    if(isNew){ sc[key]={moves,time:elapsed}; localStorage.setItem(SCORE_KEY,JSON.stringify(sc)); }
+    return isNew;
+  }catch(e){ return false; }
+}
+function renderScores(){
+  try{
+    const raw=localStorage.getItem(SCORE_KEY);
+    const sc=raw?JSON.parse(raw):{};
+    const keys=Object.keys(sc);
+    const el=document.getElementById('sclist');
+    if(!keys.length){ el.innerHTML='<p class="nosc">Поки немає рекордів</p>'; return; }
+    const icons={classic:'♾️',sprint:'⚡',blitz:'🔥',zen:'🌸'};
+    el.innerHTML=keys.sort().map(k=>{
+      const[grid,m2]=k.split('_');
+      const s=sc[k];
+      return `<div class="scr"><span class="sm">${icons[m2]||'🧩'} ${grid} ${m2}</span><span class="sv">${s.moves} ходів · ${fmt(s.time)}</span></div>`;
+    }).join('');
+  }catch(e){}
+}
+
+/* ── SAVE / LOAD ── */
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({imgURL,gridN,mode,theme,pieces:[...pieces],moves,secs}));
+  }catch(e){}
+  showToast('💾 Збережено');
+}
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+function tryRestore(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const st=JSON.parse(raw);
+    if(!st.imgURL||!st.pieces||!st.pieces.length) return;
+    imgURL=st.imgURL; gridN=st.gridN||3; mode=st.mode||'classic'; theme=st.theme||'';
+    showPhotoHome(imgURL);
+    document.querySelectorAll('[data-g]').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.g)===gridN));
+    document.querySelectorAll('[data-m]').forEach(c=>c.classList.toggle('on',c.dataset.m===mode));
+    document.querySelectorAll('[data-t]').forEach(p=>p.classList.toggle('on',p.dataset.t===theme));
+    document.body.className=theme?'t-'+theme:'';
+    startGame(st);
+  }catch(e){}
+}
+
+/* ── HELPERS ── */
+function makeShuffled(n){
+  const a=Array.from({length:n},(_,i)=>i);
+  shuffleArr(a);
+  while(a.every((v,i)=>v===i)) shuffleArr(a);
+  return a;
+}
+function shuffleArr(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
+function isSolved(){ return pieces.every((v,i)=>v===i); }
+function fmt(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
+
+let toastT;
+function showToast(msg){
+  clearTimeout(toastT);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  toastT=setTimeout(()=>t.classList.remove('on'),2000);
+}
+</script>
+</body>
+</html>
