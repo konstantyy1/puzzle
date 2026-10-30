@@ -53,7 +53,7 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
   border:2px dashed rgba(255,255,255,.2);border-radius:20px;
   background:var(--card);backdrop-filter:blur(12px);
   overflow:hidden;cursor:pointer;transition:border-color .25s,transform .15s;margin-bottom:18px;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
 }
 .upload-box:active{transform:scale(.98)}
 .upload-box.has-photo{border-style:solid;border-color:var(--a1)}
@@ -61,7 +61,7 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
 .upload-ph .uico{font-size:38px;margin-bottom:6px}
 .upload-ph p{color:rgba(255,255,255,.55);font-size:13px;line-height:1.5}
 .upload-ph strong{color:var(--a1)}
-.upload-box img{width:100%;max-height:190px;object-fit:cover;display:none;border-radius:18px}
+.upload-box img{width:100%;max-height:220px;object-fit:contain;display:none;border-radius:12px;background:#000}
 .upload-bar{
   position:absolute;bottom:0;left:0;right:0;display:none;
   background:linear-gradient(transparent,rgba(0,0,0,.75));
@@ -149,6 +149,13 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
   color:rgba(255,255,255,.75);margin-top:9px;
 }
 .btn-o:active{transform:scale(.97)}
+.btn-reset{
+  width:100%;max-width:380px;padding:12px;border-radius:14px;border:none;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;
+  background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.3);
+  color:rgba(255,100,100,.85);
+}
+.btn-reset:active{transform:scale(.97);background:rgba(239,68,68,.22)}
 
 /* ── SCORES ── */
 .scbox{
@@ -188,8 +195,15 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
 .pgf{height:100%;border-radius:3px;transition:width .4s ease;background:linear-gradient(90deg,var(--a1),var(--a2))}
 .pgl{font-size:11px;color:rgba(255,255,255,.3);margin-top:3px;text-align:right}
 
-.board-wrap{width:100%;max-width:590px;display:flex;justify-content:center;margin-bottom:10px}
-#board{position:relative;touch-action:none;user-select:none}
+.board-wrap{
+  width:100%;max-width:590px;display:flex;justify-content:center;
+  margin-bottom:10px;overflow:hidden;
+}
+/* Board gets padding equal to pad so knobs don't clip */
+#board{
+  position:relative;touch-action:none;user-select:none;
+  flex-shrink:0;
+}
 
 .pc{
   position:absolute;cursor:pointer;overflow:visible;
@@ -354,6 +368,11 @@ h1{font-size:26px;font-weight:900;text-align:center;margin-bottom:4px;
     <h3>🏆 Рекорди</h3>
     <div id="sclist"><p class="nosc">Поки немає рекордів</p></div>
   </div>
+
+  <!-- RESET -->
+  <button class="btn btn-reset" onclick="resetAll()" style="margin-top:14px">
+    🗑 Скинути все
+  </button>
 </div>
 
 <!-- ════════ GAME ════════ -->
@@ -591,8 +610,10 @@ function buildBoard() {
   document.getElementById('clipDefs').innerHTML = '';
 
   const n  = gridN;
+  /* Reserve space for: header(55) + progress(30) + action bar(55) + padding(30) + knob overflow(~50) */
+  const reserved = 220;
   const maxW = Math.min(window.innerWidth - 22, 560);
-  const maxH = Math.min(window.innerHeight - 180, 700);
+  const maxH = Math.min(window.innerHeight - reserved, 680);
   const ratio = (imgNatW > 0 && imgNatH > 0) ? imgNatW / imgNatH : 1;
 
   let bW, bH;
@@ -614,6 +635,10 @@ function buildBoard() {
   board.style.width    = boardW + 'px';
   board.style.height   = boardH + 'px';
   board.style.position = 'relative';
+
+  /* Give board-wrap padding so jigsaw knobs aren't clipped */
+  const wrap = document.querySelector('.board-wrap');
+  wrap.style.padding = pad + 'px';
 
   document.getElementById('mv').textContent = moves;
   updateTimerDisplay();
@@ -872,6 +897,32 @@ function renderScores() {
       return `<div class="scr"><span class="sm">${icons[m2]||'🧩'} ${grid} ${m2}</span><span class="sv">${sc[k].moves} ходів · ${fmt(sc[k].time)}</span></div>`;
     }).join('');
   } catch(e) {}
+}
+
+/* ── RESET ALL ── */
+function resetAll() {
+  if (!confirm('Скинути все? Фото, прогрес і рекорди будуть видалені.')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  try { localStorage.removeItem(SCORE_KEY); } catch(e) {}
+  /* Reset state */
+  imgURL=null; gridN=3; mode='classic'; theme='';
+  pieces=[]; sel=null; moves=0; secs=0;
+  gameAlive=false; stopTimer();
+  imgNatW=0; imgNatH=0;
+  /* Reset UI */
+  document.body.className = '';
+  const img = document.getElementById('prev');
+  img.src=''; img.style.display='none';
+  document.getElementById('uph').style.display='block';
+  document.getElementById('ubar').classList.remove('on');
+  document.getElementById('ub').classList.remove('has-photo');
+  document.getElementById('startBtn').disabled = true;
+  document.querySelectorAll('[data-g]').forEach(b => b.classList.toggle('on', b.dataset.g==='3'));
+  document.querySelectorAll('[data-m]').forEach(c => c.classList.toggle('on', c.dataset.m==='classic'));
+  document.querySelectorAll('.tc').forEach(p => p.classList.toggle('on', p.dataset.tid===''));
+  renderScores();
+  showScreen('home');
+  showToast('🗑 Все скинуто');
 }
 
 /* ── SAVE / LOAD ── */
