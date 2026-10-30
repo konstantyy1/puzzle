@@ -352,6 +352,11 @@ let imgURL=null, gridN=3, mode='classic', theme='';
 let pieces=[], sel=null, moves=0, secs=0;
 let timerID=null, gameAlive=false;
 let piecePx=0, pad=0, boardPx=0;
+let imgNatW=0, imgNatH=0;  /* natural size of loaded image */
+/* board dimensions in px (may differ for portrait vs landscape) */
+let boardW=0, boardH=0;
+/* piece size: pieceW × pieceH */
+let pieceW=0, pieceH=0;
 
 /* ── INIT ── */
 window.addEventListener('load',()=>{ renderScores(); tryRestore(); });
@@ -359,7 +364,10 @@ window.addEventListener('load',()=>{ renderScores(); tryRestore(); });
 /* ── FILE INPUTS ── */
 document.getElementById('fi').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f)return;
-  readFile(f,url=>{ imgURL=url; showPhotoHome(url); });
+  readFile(f,url=>{
+    imgURL=url;
+    loadImgDimensions(url, ()=>showPhotoHome(url));
+  });
   e.target.value='';
 });
 document.getElementById('gfi').addEventListener('change',e=>{
@@ -368,9 +376,11 @@ document.getElementById('gfi').addEventListener('change',e=>{
     imgURL=url;
     closePhotoModal();
     clearSave();
-    pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
-    buildBoard();
-    showToast('📷 Нове фото!');
+    loadImgDimensions(url, ()=>{
+      pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
+      buildBoard();
+      showToast('📷 Нове фото!');
+    });
   });
   e.target.value='';
 });
@@ -386,6 +396,13 @@ function showPhotoHome(url){
   document.getElementById('uph').style.display='none';
   document.getElementById('ubar').classList.add('on');
   document.getElementById('startBtn').disabled=false;
+}
+/* Load image and capture natural dimensions */
+function loadImgDimensions(url, cb){
+  const tmp=new Image();
+  tmp.onload=()=>{ imgNatW=tmp.naturalWidth; imgNatH=tmp.naturalHeight; cb(); };
+  tmp.onerror=()=>{ imgNatW=1; imgNatH=1; cb(); };
+  tmp.src=url;
 }
 function triggerUpload(){ document.getElementById('fi').click(); }
 
@@ -427,12 +444,16 @@ function startGame(saved){
     theme=saved.theme||''; pieces=saved.pieces;
     moves=saved.moves||0; secs=saved.secs||0;
     document.body.className=theme?'t-'+theme:'';
-    buildBoard();
-    startTimer(); gameAlive=true;
+    loadImgDimensions(imgURL, ()=>{
+      buildBoard();
+      startTimer(); gameAlive=true;
+    });
   } else {
     pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
-    buildBoard();
-    runCountdown(()=>{ startTimer(); gameAlive=true; });
+    loadImgDimensions(imgURL, ()=>{
+      buildBoard();
+      runCountdown(()=>{ startTimer(); gameAlive=true; });
+    });
   }
 }
 
@@ -456,40 +477,43 @@ function edgeSign(row,col,dir,n){
   return ((h&1)?1:-1)*factor;
 }
 
-/* ══════════════════════════════════════════
-   SVG PATH for jigsaw piece
-   Returns the 'd' attribute string.
-   x0,y0 = top-left corner of piece in SVG coords
-══════════════════════════════════════════ */
+/* jigsawPath — square pieces (kept for reference) */
 function jigsawPath(x0,y0,S,eT,eR,eB,eL){
-  const x1=x0+S, y1=y0+S;
-  const mx=x0+S/2, my=y0+S/2;
-  const kh=S*KH, kw=S*KW;
+  return jigsawPathRect(x0,y0,S,S,eT,eR,eB,eL);
+}
+
+/* jigsawPathRect — rectangular pieces with width SW, height SH */
+function jigsawPathRect(x0,y0,SW,SH,eT,eR,eB,eL){
+  const x1=x0+SW, y1=y0+SH;
+  const mx=x0+SW/2, my=y0+SH/2;
+  /* knob size based on respective side */
+  const khH=SH*KH, kwH=SH*KW;   /* for top/bottom edges: height of bump, width along X */
+  const khV=SW*KH, kwV=SW*KW;   /* for left/right edges: height of bump, width along Y */
 
   let d=`M${x0},${y0}`;
 
-  /* TOP */
+  /* TOP (left→right, knob goes up/down) */
   if(eT===0){ d+=` L${x1},${y0}`; }
   else{
-    const a=mx-kw/2, b=mx+kw/2, k=y0-eT*kh;
+    const a=mx-kwH/2, b=mx+kwH/2, k=y0-eT*khH;
     d+=` L${a},${y0} C${a},${k} ${b},${k} ${b},${y0} L${x1},${y0}`;
   }
-  /* RIGHT */
+  /* RIGHT (top→bottom, knob goes left/right) */
   if(eR===0){ d+=` L${x1},${y1}`; }
   else{
-    const a=my-kw/2, b=my+kw/2, k=x1+eR*kh;
+    const a=my-kwV/2, b=my+kwV/2, k=x1+eR*khV;
     d+=` L${x1},${a} C${k},${a} ${k},${b} ${x1},${b} L${x1},${y1}`;
   }
-  /* BOTTOM */
+  /* BOTTOM (right→left, knob goes up/down) */
   if(eB===0){ d+=` L${x0},${y1}`; }
   else{
-    const a=mx+kw/2, b=mx-kw/2, k=y1+eB*kh;
+    const a=mx+kwH/2, b=mx-kwH/2, k=y1+eB*khH;
     d+=` L${a},${y1} C${a},${k} ${b},${k} ${b},${y1} L${x0},${y1}`;
   }
-  /* LEFT */
+  /* LEFT (bottom→top, knob goes left/right) */
   if(eL===0){ d+=` L${x0},${y0}`; }
   else{
-    const a=my+kw/2, b=my-kw/2, k=x0-eL*kh;
+    const a=my+kwV/2, b=my-kwV/2, k=x0-eL*khV;
     d+=` L${x0},${a} C${k},${a} ${k},${b} ${x0},${b} L${x0},${y0}`;
   }
   d+=' Z';
@@ -507,18 +531,40 @@ function jigsawPath(x0,y0,S,eT,eR,eB,eL){
 function buildBoard(){
   const board=document.getElementById('board');
   board.innerHTML='';
-  /* clear old SVG clip defs */
   document.getElementById('clipDefs').innerHTML='';
 
   const n=gridN;
-  const vw=Math.min(window.innerWidth-22,560);
-  piecePx=Math.floor(vw/n);
-  pad=Math.ceil(piecePx*KH)+4;
-  boardPx=piecePx*n;
+  const maxW=Math.min(window.innerWidth-22, 560);
+  const maxH=Math.min(window.innerHeight-180, 680);
 
-  board.style.width=boardPx+'px';
-  board.style.height=boardPx+'px';
-  board.style.position='relative';
+  /* Compute board size preserving image aspect ratio, fitting within maxW×maxH */
+  const ratio = (imgNatW>0 && imgNatH>0) ? imgNatW/imgNatH : 1;
+  let bW, bH;
+  if(ratio >= 1){
+    /* landscape or square: constrain by width */
+    bW = maxW;
+    bH = Math.round(maxW / ratio);
+    if(bH > maxH){ bH=maxH; bW=Math.round(maxH*ratio); }
+  } else {
+    /* portrait: constrain by height */
+    bH = maxH;
+    bW = Math.round(maxH * ratio);
+    if(bW > maxW){ bW=maxW; bH=Math.round(maxW/ratio); }
+  }
+
+  /* Piece size — floor so pieces tile evenly */
+  pieceW = Math.floor(bW / n);
+  pieceH = Math.floor(bH / n);
+  /* Recalc board from piece size to avoid gaps */
+  boardW = pieceW * n;
+  boardH = pieceH * n;
+
+  /* pad based on the SMALLER piece dimension */
+  pad = Math.ceil(Math.min(pieceW, pieceH) * KH) + 4;
+
+  board.style.width  = boardW + 'px';
+  board.style.height = boardH + 'px';
+  board.style.position = 'relative';
 
   document.getElementById('mv').textContent=moves;
   updateTimerDisplay();
@@ -529,7 +575,8 @@ function buildBoard(){
 }
 
 function spawnPiece(slot){
-  const n=gridN, S=piecePx, P=pad;
+  const n=gridN;
+  const SW=pieceW, SH=pieceH, P=pad;
   const tile=pieces[slot];
   const tRow=Math.floor(tile/n), tCol=tile%n;
   const sRow=Math.floor(slot/n), sCol=slot%n;
@@ -539,29 +586,24 @@ function spawnPiece(slot){
   const eB=edgeSign(tRow,tCol,2,n);
   const eL=edgeSign(tRow,tCol,3,n);
 
-  /* SVG viewport is (S+2*P) × (S+2*P).
-     Piece top-left inside SVG = (P, P).
-     Image is positioned so that tile (tCol,tRow) appears at (P,P). */
-  const svgW=S+2*P, svgH=S+2*P;
+  const svgW=SW+2*P, svgH=SH+2*P;
 
-  /* Image cover-fit the full board */
-  const bSz=S*n;
-  /* We'll set image width/height to boardPx, offset by tile position */
-  const imgX=P-tCol*S;
-  const imgY=P-tRow*S;
+  /* Image positioned so tile (tCol,tRow) aligns with (P,P) in SVG coords */
+  const imgX = P - tCol*SW;
+  const imgY = P - tRow*SH;
 
   const clipId='cp_'+slot+'_'+Date.now();
 
-  /* Add clipPath to global SVG defs */
+  /* clipPath uses rectangular piece coords: x=P, y=P, w=SW, h=SH */
   const defs=document.getElementById('clipDefs');
   const cp=document.createElementNS('http://www.w3.org/2000/svg','clipPath');
   cp.setAttribute('id',clipId);
   const pathEl=document.createElementNS('http://www.w3.org/2000/svg','path');
-  pathEl.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
+  /* jigsawPath needs square pieces for symmetric knobs — use min dim for knob calc */
+  pathEl.setAttribute('d', jigsawPathRect(P,P,SW,SH,eT,eR,eB,eL));
   cp.appendChild(pathEl);
   defs.appendChild(cp);
 
-  /* Create SVG piece */
   const ns='http://www.w3.org/2000/svg';
   const svg=document.createElementNS(ns,'svg');
   svg.setAttribute('width',svgW);
@@ -569,38 +611,37 @@ function spawnPiece(slot){
   svg.setAttribute('viewBox',`0 0 ${svgW} ${svgH}`);
   svg.style.overflow='visible';
 
-  /* Image clipped to jigsaw shape */
+  /* Image — full board size, offset to show correct tile */
   const imgEl=document.createElementNS(ns,'image');
   imgEl.setAttribute('href',imgURL);
   imgEl.setAttribute('x',imgX);
   imgEl.setAttribute('y',imgY);
-  imgEl.setAttribute('width',bSz);
-  imgEl.setAttribute('height',bSz);
-  imgEl.setAttribute('preserveAspectRatio','xMidYMid slice');
+  imgEl.setAttribute('width',boardW);
+  imgEl.setAttribute('height',boardH);
+  imgEl.setAttribute('preserveAspectRatio','none');  /* exact fit, no crop */
   imgEl.setAttribute('clip-path',`url(#${clipId})`);
   svg.appendChild(imgEl);
 
-  /* Vignette overlay clipped to same shape */
+  /* Vignette */
   const vign=document.createElementNS(ns,'path');
-  vign.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
-  vign.setAttribute('fill','rgba(0,0,0,0.15)');
+  vign.setAttribute('d', jigsawPathRect(P,P,SW,SH,eT,eR,eB,eL));
+  vign.setAttribute('fill','rgba(0,0,0,0.12)');
   svg.appendChild(vign);
 
-  /* Border stroke */
+  /* Border */
   const stroke=document.createElementNS(ns,'path');
-  stroke.setAttribute('d', jigsawPath(P,P,S,eT,eR,eB,eL));
+  stroke.setAttribute('d', jigsawPathRect(P,P,SW,SH,eT,eR,eB,eL));
   stroke.setAttribute('fill','none');
-  stroke.setAttribute('stroke','rgba(255,255,255,0.3)');
+  stroke.setAttribute('stroke','rgba(255,255,255,0.28)');
   stroke.setAttribute('stroke-width','1.5');
   svg.appendChild(stroke);
 
-  /* Wrapper div */
   const div=document.createElement('div');
   div.className='pc';
   if(tile===slot) div.classList.add('ok');
   div.dataset.slot=slot;
-  div.style.left=(sCol*S-P)+'px';
-  div.style.top=(sRow*S-P)+'px';
+  div.style.left=(sCol*SW-P)+'px';
+  div.style.top=(sRow*SH-P)+'px';
   div.style.width=svgW+'px';
   div.style.height=svgH+'px';
   div.appendChild(svg);
@@ -722,7 +763,9 @@ function onWin(){
 
 function playAgain(){
   pieces=makeShuffled(gridN*gridN); moves=0; secs=modeStartSecs();
-  showScreen('gs'); buildBoard();
+  showScreen('gs');
+  /* imgNatW/H already set, just rebuild */
+  buildBoard();
   runCountdown(()=>{ startTimer(); gameAlive=true; });
 }
 
