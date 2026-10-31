@@ -122,8 +122,8 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .board-wrap{width:100%;max-width:590px;display:flex;justify-content:center;margin-bottom:8px}
 #board{position:relative;flex-shrink:0;touch-action:none;user-select:none}
 #frame{position:absolute;top:0;left:0;pointer-events:none;z-index:1}
-.slot{position:absolute;border:1.5px dashed rgba(255,255,255,.13);box-sizing:border-box}
-.slot.filled{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04)}
+.slot{position:absolute;box-sizing:border-box;pointer-events:none}
+.slot.filled{background:rgba(74,222,128,.06)}
 
 /* SCATTER */
 #scatter{position:relative;width:100%;max-width:590px;margin-bottom:8px;touch-action:none;user-select:none;overflow:visible}
@@ -572,7 +572,7 @@ function buildBoard() {
   var board=document.getElementById('board');
   board.style.cssText='position:relative;flex-shrink:0;touch-action:none;user-select:none;width:'+boardW+'px;height:'+boardH+'px;border:2px solid rgba(255,255,255,.18);border-radius:6px';
 
-  /* Frame — draw grid lines manually, no CSS grid (iOS WebView bug) */
+  /* Frame — SVG grid lines, works everywhere including Telegram iOS WebView */
   var frame=document.getElementById('frame');
   frame.style.position='absolute';
   frame.style.top='0'; frame.style.left='0';
@@ -580,18 +580,47 @@ function buildBoard() {
   frame.style.pointerEvents='none';
   frame.style.zIndex='1';
 
-  /* Draw slot divs with absolute positioning */
+  /* Build SVG with grid lines */
+  var svgNS='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(svgNS,'svg');
+  svg.setAttribute('width',boardW);
+  svg.setAttribute('height',boardH);
+  svg.setAttribute('viewBox','0 0 '+boardW+' '+boardH);
+  svg.style.position='absolute';
+  svg.style.top='0'; svg.style.left='0';
+  svg.style.overflow='visible';
+
+  /* Draw vertical lines */
+  for(var ci=1;ci<n;ci++){
+    var xl=ci*pieceW;
+    var vl=document.createElementNS(svgNS,'line');
+    vl.setAttribute('x1',xl); vl.setAttribute('y1',0);
+    vl.setAttribute('x2',xl); vl.setAttribute('y2',boardH);
+    vl.setAttribute('stroke','rgba(255,255,255,0.15)');
+    vl.setAttribute('stroke-width','1');
+    vl.setAttribute('stroke-dasharray','5,4');
+    svg.appendChild(vl);
+  }
+  /* Draw horizontal lines */
+  for(var ri=1;ri<n;ri++){
+    var yl=ri*pieceH;
+    var hl=document.createElementNS(svgNS,'line');
+    hl.setAttribute('x1',0);    hl.setAttribute('y1',yl);
+    hl.setAttribute('x2',boardW); hl.setAttribute('y2',yl);
+    hl.setAttribute('stroke','rgba(255,255,255,0.15)');
+    hl.setAttribute('stroke-width','1');
+    hl.setAttribute('stroke-dasharray','5,4');
+    svg.appendChild(hl);
+  }
+  frame.appendChild(svg);
+
+  /* Invisible slot divs for hit-testing (snap detection uses getBoundingClientRect) */
   for(var s=0;s<n*n;s++){
     var sr2=Math.floor(s/n), sc2=s%n;
     var sl=document.createElement('div');
     sl.className='slot'+(lockedSlots[s]?' filled':'');
     sl.dataset.slot=s;
-    sl.style.position='absolute';
-    sl.style.left=(sc2*pieceW)+'px';
-    sl.style.top=(sr2*pieceH)+'px';
-    sl.style.width=pieceW+'px';
-    sl.style.height=pieceH+'px';
-    sl.style.boxSizing='border-box';
+    sl.style.cssText='position:absolute;left:'+sc2*pieceW+'px;top:'+sr2*pieceH+'px;width:'+pieceW+'px;height:'+pieceH+'px;box-sizing:border-box';
     frame.appendChild(sl);
   }
 
