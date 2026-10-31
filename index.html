@@ -801,85 +801,84 @@ function attachDrag(div, slot) {
   document.addEventListener('touchend',  onEnd, {passive:false});
 }
 
-/* Check if piece is over correct slot */
+/* Check if piece is near any available slot on the board */
 function getSnapSlot(div) {
   var n=gridN, SW=pieceW, SH=pieceH, P=pad;
-  var slot = parseInt(div.dataset.slot);
-  var tile  = pieces[slot];
-  /* Only snap to the CORRECT slot for this tile */
-  var correctSlot = tile; /* piece[slot]=tile, correct position = tile index */
-  var sRow=Math.floor(correctSlot/n), sCol=correctSlot%n;
   var boardRect = document.getElementById('board').getBoundingClientRect();
-  /* Target position in viewport */
-  var targetX = boardRect.left + sCol*SW - P;
-  var targetY = boardRect.top  + sRow*SH - P;
-  var divRect = div.getBoundingClientRect();
-  var dx = Math.abs(divRect.left - targetX);
-  var dy = Math.abs(divRect.top  - targetY);
-  var snap = Math.min(SW, SH) * 0.45;
-  if (dx < snap && dy < snap) return correctSlot;
-  return null;
+  var divRect   = div.getBoundingClientRect();
+  var snap = Math.min(SW, SH) * 0.5;
+  var best = null, bestDist = snap;
+
+  for (var s = 0; s < n*n; s++) {
+    /* Skip slots that are already correctly filled (locked) */
+    var lockedEl = document.querySelector('#board .pc.ok[data-slot="'+s+'"]');
+    if (lockedEl) continue;
+
+    var sRow=Math.floor(s/n), sCol=s%n;
+    var targetX = boardRect.left + sCol*SW - P;
+    var targetY = boardRect.top  + sRow*SH - P;
+    var dx = Math.abs(divRect.left - targetX);
+    var dy = Math.abs(divRect.top  - targetY);
+    var dist = Math.sqrt(dx*dx+dy*dy);
+    if (dist < bestDist) { bestDist=dist; best=s; }
+  }
+  return best;
 }
 
 function placePieceOnSlot(div, fromSlot, toSlot) {
   var n=gridN, SW=pieceW, SH=pieceH, P=pad;
-  /* If another piece is on toSlot — send it to scatter */
-  var existing = document.querySelector('#board .pc[data-slot="'+toSlot+'"]');
-  if (existing && !existing.classList.contains('ok')) {
+
+  /* The tile this piece carries */
+  var tile = pieces[fromSlot];
+
+  /* If another (non-locked) piece already sits at toSlot — kick it to scatter */
+  var existing = document.querySelector('#board .pc[data-slot="'+toSlot+'"]:not(.ok)');
+  if (existing) {
+    /* That piece carries pieces[toSlot] tile — find its fromSlot */
+    var kickSlot = parseInt(existing.dataset.slot);
+    /* Move toSlot tile back to fromSlot in array */
+    pieces[fromSlot] = pieces[toSlot];
     returnToScatter(existing);
+  } else {
+    pieces[fromSlot] = -1; /* placeholder */
   }
 
-  /* Swap pieces array */
-  /* fromSlot holds piece[fromSlot], toSlot holds piece[toSlot] */
-  /* We want piece[fromSlot] to go to toSlot */
-  /* Find where toSlot's tile currently lives */
-  var fromTile = pieces[fromSlot];
-  var toTile   = pieces[toSlot];
-  pieces[fromSlot] = toTile;
-  pieces[toSlot]   = fromTile;
+  /* Place tile at toSlot */
+  pieces[toSlot] = tile;
 
   moves++;
   document.getElementById('mv').textContent = moves;
   haptic('medium');
 
-  /* Remove old fromSlot piece from DOM */
-  var oldFrom = document.querySelector('#board .pc[data-slot="'+fromSlot+'"]');
-  if (oldFrom) oldFrom.remove();
-
-  /* Place div on board at correct position */
+  /* Position div on board */
   var sRow=Math.floor(toSlot/n), sCol=toSlot%n;
-  div.style.position='absolute';
-  div.style.left=(sCol*SW-P)+'px';
-  div.style.top=(sRow*SH-P)+'px';
-  div.style.transform='rotate(0deg)';
-  div.dataset.slot = toSlot;
+  div.style.position  = 'absolute';
+  div.style.left      = (sCol*SW - P) + 'px';
+  div.style.top       = (sRow*SH - P) + 'px';
+  div.style.transform = 'rotate(0deg)';
+  div.style.zIndex    = '';
+  div.dataset.slot    = toSlot;
   div.classList.remove('snap-preview');
 
-  var correct = (pieces[toSlot] === toSlot);
+  var correct = (tile === toSlot);
   if (correct) {
-    div.classList.add('ok');
-    /* Remove drag listeners by cloning */
+    /* LOCK the piece */
     var clone = div.cloneNode(true);
+    clone.classList.remove('snap-preview');
     clone.classList.add('ok');
+    clone.style.pointerEvents = 'none';
     document.getElementById('board').appendChild(clone);
     if (div.parentNode) div.parentNode.removeChild(div);
-    /* Mark slot */
-    var slotEl=document.querySelector('#frame .slot[data-slot="'+toSlot+'"]');
-    if(slotEl) slotEl.classList.add('filled');
+    var slotEl = document.querySelector('#frame .slot[data-slot="'+toSlot+'"]');
+    if (slotEl) slotEl.classList.add('filled');
     haptic('success');
   } else {
     document.getElementById('board').appendChild(div);
   }
 
-  /* If toTile's old slot (fromSlot) now has wrong piece, redraw it in scatter */
-  if (!correct && pieces[fromSlot] !== fromSlot) {
-    /* The displaced piece (toTile) now sits at fromSlot — spawn it in scatter */
-    var dispDiv = document.querySelector('#board .pc[data-slot="'+fromSlot+'"]');
-    if (!dispDiv) {
-      spawnInScatter(fromSlot,
-        document.getElementById('scatter').offsetWidth,
-        document.getElementById('scatter').offsetHeight);
-    }
+  /* If fromSlot still has -1 (no piece kicked there), clean up */
+  if (pieces[fromSlot] === -1) {
+    pieces[fromSlot] = -1; /* will be handled by isSolved check — -1 means empty slot */
   }
 
   updateProg(); saveGame();
@@ -924,7 +923,6 @@ function reshuffleBoard() {
   buildBoard(); saveGame();
 }
 
-/* ── PROGRESS ── */
 function updateProg() {
   var total=gridN*gridN;
   var ok=0; for(var i=0;i<pieces.length;i++) if(pieces[i]===i) ok++;
@@ -1104,7 +1102,10 @@ function shuffleArr(a) {
   }
 }
 function isSolved()  { return isSolved2(pieces); }
-function isSolved2(a){ for(var i=0;i<a.length;i++) if(a[i]!==i) return false; return true; }
+function isSolved2(a){
+  for(var i=0;i<a.length;i++) if(a[i]!==i) return false;
+  return true;
+}
 function fmt(s) { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60); }
 function haptic(type) {
   var tg=window.Telegram&&window.Telegram.WebApp;
