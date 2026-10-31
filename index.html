@@ -121,8 +121,8 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 /* BOARD FRAME */
 .board-wrap{width:100%;max-width:590px;display:flex;justify-content:center;margin-bottom:8px}
 #board{position:relative;flex-shrink:0;touch-action:none;user-select:none}
-#frame{position:absolute;top:0;left:0;right:0;bottom:0;display:grid;pointer-events:none;z-index:1}
-.slot{border:1.5px dashed rgba(255,255,255,.13);box-sizing:border-box}
+#frame{position:absolute;top:0;left:0;pointer-events:none;z-index:1}
+.slot{position:absolute;border:1.5px dashed rgba(255,255,255,.13);box-sizing:border-box}
 .slot.filled{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04)}
 
 /* SCATTER */
@@ -373,7 +373,6 @@ window.addEventListener('DOMContentLoaded', function() {
     var img = document.createElement('img');
     img.src = g.url;
     img.alt = g.label;
-    img.crossOrigin = 'anonymous';
     var lbl = document.createElement('div');
     lbl.className = 'gal-label';
     lbl.textContent = g.label;
@@ -465,7 +464,7 @@ function showPhotoHome(url) {
 
 function loadImgDimensions(url, cb) {
   var tmp = new Image();
-  tmp.crossOrigin = 'anonymous';
+  /* crossOrigin needed for canvas operations, but for SVG image tag it's not needed */
   tmp.onload  = function(){ imgNatW=tmp.naturalWidth; imgNatH=tmp.naturalHeight; cb(); };
   tmp.onerror = function(){ imgNatW=1; imgNatH=1; cb(); };
   tmp.src = url;
@@ -573,24 +572,26 @@ function buildBoard() {
   var board=document.getElementById('board');
   board.style.cssText='position:relative;flex-shrink:0;touch-action:none;user-select:none;width:'+boardW+'px;height:'+boardH+'px;border:2px solid rgba(255,255,255,.18);border-radius:6px';
 
-  /* Frame slots */
+  /* Frame — draw grid lines manually, no CSS grid (iOS WebView bug) */
   var frame=document.getElementById('frame');
   frame.style.position='absolute';
-  frame.style.top='0';
-  frame.style.left='0';
-  frame.style.right='0';
-  frame.style.bottom='0';
-  frame.style.display='grid';
-  frame.style.gridTemplateColumns='repeat('+n+',1fr)';
-  frame.style.gridTemplateRows='repeat('+n+',1fr)';
+  frame.style.top='0'; frame.style.left='0';
+  frame.style.width=boardW+'px'; frame.style.height=boardH+'px';
   frame.style.pointerEvents='none';
   frame.style.zIndex='1';
-  frame.style.width=boardW+'px';
-  frame.style.height=boardH+'px';
+
+  /* Draw slot divs with absolute positioning */
   for(var s=0;s<n*n;s++){
+    var sr2=Math.floor(s/n), sc2=s%n;
     var sl=document.createElement('div');
     sl.className='slot'+(lockedSlots[s]?' filled':'');
     sl.dataset.slot=s;
+    sl.style.position='absolute';
+    sl.style.left=(sc2*pieceW)+'px';
+    sl.style.top=(sr2*pieceH)+'px';
+    sl.style.width=pieceW+'px';
+    sl.style.height=pieceH+'px';
+    sl.style.boxSizing='border-box';
     frame.appendChild(sl);
   }
 
