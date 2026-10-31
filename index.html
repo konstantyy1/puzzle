@@ -526,7 +526,10 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
-  /* Show/hide thumbnail */
+  updateThumb(id);
+}
+
+function updateThumb(id){
   var thumb=document.getElementById('preview-thumb');
   if(id==='gs' && imgURL){
     document.getElementById('thumb-img').src=imgURL;
@@ -726,6 +729,8 @@ function buildBoard() {
   document.getElementById('mv').textContent=moves;
   updateTimerDisplay();
   updateProg();
+  /* Ensure thumbnail is visible now that imgURL is set */
+  updateThumb('gs');
 }
 
 /* ── SPAWN PIECE ── */
