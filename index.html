@@ -121,7 +121,7 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 /* BOARD FRAME */
 .board-wrap{width:100%;max-width:590px;display:flex;justify-content:center;margin-bottom:8px}
 #board{position:relative;flex-shrink:0;touch-action:none;user-select:none}
-#frame{position:absolute;inset:0;display:grid;pointer-events:none;z-index:1}
+#frame{position:absolute;top:0;left:0;right:0;bottom:0;display:grid;pointer-events:none;z-index:1}
 .slot{border:1.5px dashed rgba(255,255,255,.13);box-sizing:border-box}
 .slot.filled{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04)}
 
@@ -575,7 +575,18 @@ function buildBoard() {
 
   /* Frame slots */
   var frame=document.getElementById('frame');
-  frame.style.cssText='position:absolute;inset:0;display:grid;grid-template-columns:repeat('+n+',1fr);grid-template-rows:repeat('+n+',1fr);pointer-events:none;z-index:1';
+  frame.style.position='absolute';
+  frame.style.top='0';
+  frame.style.left='0';
+  frame.style.right='0';
+  frame.style.bottom='0';
+  frame.style.display='grid';
+  frame.style.gridTemplateColumns='repeat('+n+',1fr)';
+  frame.style.gridTemplateRows='repeat('+n+',1fr)';
+  frame.style.pointerEvents='none';
+  frame.style.zIndex='1';
+  frame.style.width=boardW+'px';
+  frame.style.height=boardH+'px';
   for(var s=0;s<n*n;s++){
     var sl=document.createElement('div');
     sl.className='slot'+(lockedSlots[s]?' filled':'');
