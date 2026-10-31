@@ -120,9 +120,52 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
 .pgl{font-size:11px;color:rgba(255,255,255,.3);margin-top:3px;text-align:right}
 .board-wrap{width:100%;max-width:590px;display:flex;justify-content:center;margin-bottom:10px;overflow:visible}
 #board{position:relative;touch-action:none;user-select:none;flex-shrink:0}
-.pc{position:absolute;cursor:pointer;overflow:visible;transition:filter .18s,transform .18s;filter:drop-shadow(0 2px 6px rgba(0,0,0,.55))}
-.pc.sel{filter:drop-shadow(0 0 14px var(--a1)) drop-shadow(0 0 5px var(--a1));transform:scale(1.07);z-index:20}
-.pc.ok{filter:drop-shadow(0 0 8px rgba(74,222,128,.75))}
+
+/* ── FRAME (empty slots grid) ── */
+#frame{
+  position:absolute;inset:0;
+  display:grid;
+  pointer-events:none;
+  z-index:1;
+}
+.slot{
+  border:1.5px dashed rgba(255,255,255,0.15);
+  border-radius:4px;
+  box-sizing:border-box;
+}
+.slot.filled{border-color:rgba(74,222,128,0.4)}
+
+/* ── SCATTER AREA ── */
+#scatter{
+  position:relative;
+  width:100%;max-width:590px;
+  margin-bottom:10px;
+  touch-action:none;
+  user-select:none;
+}
+
+/* ── PIECES ── */
+.pc{
+  position:absolute;cursor:pointer;overflow:visible;
+  transition:filter .18s;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.7));
+  touch-action:none;
+}
+.pc.dragging{
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.8)) drop-shadow(0 0 12px var(--a1));
+  z-index:100;
+  cursor:grabbing;
+  transition:none;
+}
+.pc.ok{
+  filter:drop-shadow(0 0 8px rgba(74,222,128,.8));
+  pointer-events:none; /* LOCKED — cannot be moved */
+  cursor:default;
+  z-index:2;
+}
+.pc.snap-preview{
+  filter:drop-shadow(0 0 16px rgba(74,222,128,1));
+}
 .abar{display:flex;gap:7px;width:100%;max-width:380px}
 .abtn{flex:1;padding:11px;font-size:13px;border-radius:12px;background:var(--card);backdrop-filter:blur(8px);border:1.5px solid var(--brd);color:rgba(255,255,255,.72);cursor:pointer;transition:all .15s}
 .abtn:active{transform:scale(.95);background:var(--glass)}
@@ -246,7 +289,14 @@ h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:3px;background
     <div class="pgbg"><div class="pgf" id="pgf" style="width:0%"></div></div>
     <div class="pgl" id="pgl">0 / 0</div>
   </div>
-  <div class="board-wrap"><div id="board"></div></div>
+  <!-- Frame: the target grid -->
+  <div class="board-wrap">
+    <div id="board">
+      <div id="frame"></div>
+    </div>
+  </div>
+  <!-- Scatter area: pieces lying around -->
+  <div id="scatter"></div>
   <div class="abar">
     <button class="abtn" onclick="openPhotoModal()">📷 Змінити фото</button>
     <button class="abtn" onclick="goHome()">🏠 Додому</button>
@@ -502,15 +552,16 @@ function jPath(x0, y0, SW, SH, eT, eR, eB, eL) {
 
 /* ── BUILD BOARD ── */
 function buildBoard() {
-  document.getElementById('board').innerHTML = '';
+  document.getElementById('board').innerHTML = '<div id="frame"></div>';
+  document.getElementById('scatter').innerHTML = '';
   document.getElementById('clipDefs').innerHTML = '';
 
   var n = gridN;
-  var vvW = (window.visualViewport ? window.visualViewport.width  : window.innerWidth);
+  var vvW = (window.visualViewport ? window.visualViewport.width : window.innerWidth);
   var vvH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
   var isDesktop = vvW >= 700;
-  var maxW = isDesktop ? Math.min(vvW * 0.55, 760) : Math.min(vvW - 20, 560);
-  var maxH = isDesktop ? Math.min(vvH - 140, 820) : Math.min(vvH - 195, 700);
+  var maxW = isDesktop ? Math.min(vvW * 0.5, 520) : Math.min(vvW - 24, 420);
+  var maxH = isDesktop ? Math.min(vvH - 180, 520) : Math.min(vvH - 280, 380);
   var ratio = (imgNatW > 0 && imgNatH > 0) ? imgNatW / imgNatH : 1;
 
   var bW, bH;
@@ -528,31 +579,89 @@ function buildBoard() {
   boardH = pieceH * n;
   pad    = Math.ceil(Math.min(pieceW, pieceH) * KH) + 4;
 
+  /* Board frame */
   var board = document.getElementById('board');
   board.style.width    = boardW + 'px';
   board.style.height   = boardH + 'px';
   board.style.position = 'relative';
-  board.style.margin   = pad + 'px';
+  board.style.border   = '2px solid rgba(255,255,255,0.15)';
+  board.style.borderRadius = '6px';
+  board.style.flexShrink = '0';
+
+  /* Empty slot grid inside frame */
+  var frame = document.getElementById('frame');
+  frame.style.cssText = 'position:absolute;inset:0;display:grid;grid-template-columns:repeat('+n+',1fr);grid-template-rows:repeat('+n+',1fr);pointer-events:none;z-index:1';
+  for (var s = 0; s < n*n; s++) {
+    var slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.slot = s;
+    frame.appendChild(slot);
+  }
+
+  /* Scatter area size — space around the board to toss pieces */
+  var scatter = document.getElementById('scatter');
+  var scW = Math.min(vvW - 8, 590);
+  var scH = Math.max(pieceH * 2 + pad * 4, 120);
+  scatter.style.cssText = 'position:relative;width:'+scW+'px;height:'+scH+'px;margin-bottom:10px;touch-action:none;user-select:none;overflow:visible';
 
   document.getElementById('mv').textContent = moves;
   updateTimerDisplay();
   updateProg();
 
-  for (var i = 0; i < n * n; i++) spawnPiece(i);
+  /* Place pieces randomly in scatter area */
+  for (var i = 0; i < n * n; i++) {
+    if (pieces[i] === i) {
+      /* Already solved — place directly on board frame */
+      spawnOnBoard(i);
+    } else {
+      spawnInScatter(i, scW, scH);
+    }
+  }
   sel = null;
 }
 
-/* ── SPAWN PIECE ── */
-function spawnPiece(slot) {
+/* Spawn a piece locked onto the board (correct position) */
+function spawnOnBoard(slot) {
   var n=gridN, SW=pieceW, SH=pieceH, P=pad;
-  var tile = pieces[slot];
-  var tRow = Math.floor(tile/n), tCol = tile%n;
-  var sRow = Math.floor(slot/n), sCol = slot%n;
+  var tile=pieces[slot];
+  var sRow=Math.floor(slot/n), sCol=slot%n;
+  var div=buildPieceDiv(slot, tile, true);
+  div.style.left=(sCol*SW-P)+'px';
+  div.style.top=(sRow*SH-P)+'px';
+  document.getElementById('board').appendChild(div);
+  /* Mark slot as filled */
+  var slotEl=document.querySelector('#frame .slot[data-slot="'+slot+'"]');
+  if(slotEl) slotEl.classList.add('filled');
+}
+
+/* Spawn a piece randomly in scatter area */
+function spawnInScatter(slot, scW, scH) {
+  var n=gridN, SW=pieceW, SH=pieceH, P=pad;
+  var tile=pieces[slot];
+  var div=buildPieceDiv(slot, tile, false);
+  /* Random position with slight overlap allowed */
+  var maxX = Math.max(0, scW - SW - P*2);
+  var maxY = Math.max(0, scH - SH - P*2);
+  var rx = Math.floor(Math.random() * maxX);
+  var ry = Math.floor(Math.random() * maxY);
+  /* Random slight rotation for "lying on table" feel */
+  var rot = (Math.random() - 0.5) * 24;
+  div.style.left = rx + 'px';
+  div.style.top  = ry + 'px';
+  div.style.transform = 'rotate('+rot+'deg)';
+  div.dataset.rot = rot;
+  document.getElementById('scatter').appendChild(div);
+}
+
+/* Build SVG piece div */
+function buildPieceDiv(slot, tile, locked) {
+  var n=gridN, SW=pieceW, SH=pieceH, P=pad;
+  var tRow=Math.floor(tile/n), tCol=tile%n;
   var eT=edgeSign(tRow,tCol,0,n), eR=edgeSign(tRow,tCol,1,n);
   var eB=edgeSign(tRow,tCol,2,n), eL=edgeSign(tRow,tCol,3,n);
   var svgW=SW+2*P, svgH=SH+2*P;
   var imgX=P-tCol*SW, imgY=P-tRow*SH;
-  var clipId='cp'+slot+'x'+(Date.now()&0xfffff);
+  var clipId='cp'+slot+'x'+(Date.now()&0xfffff)+(Math.random()*999|0);
 
   var ns='http://www.w3.org/2000/svg';
   var defs=document.getElementById('clipDefs');
@@ -563,7 +672,7 @@ function spawnPiece(slot) {
   var svg=document.createElementNS(ns,'svg');
   svg.setAttribute('width',svgW); svg.setAttribute('height',svgH);
   svg.setAttribute('viewBox','0 0 '+svgW+' '+svgH);
-  svg.style.overflow='visible';
+  svg.style.overflow='visible'; svg.style.display='block';
 
   var img=document.createElementNS(ns,'image');
   img.setAttribute('href',imgURL);
@@ -581,53 +690,212 @@ function spawnPiece(slot) {
   var strk=document.createElementNS(ns,'path');
   strk.setAttribute('d',jPath(P,P,SW,SH,eT,eR,eB,eL));
   strk.setAttribute('fill','none');
-  strk.setAttribute('stroke','rgba(255,255,255,0.25)');
+  strk.setAttribute('stroke','rgba(255,255,255,0.28)');
   strk.setAttribute('stroke-width','1.5');
   svg.appendChild(strk);
 
   var div=document.createElement('div');
-  div.className='pc'+(tile===slot?' ok':'');
+  div.className='pc'+(locked?' ok':'');
   div.dataset.slot=slot;
-  div.style.left=(sCol*SW-P)+'px';
-  div.style.top=(sRow*SH-P)+'px';
+  div.style.position='absolute';
   div.style.width=svgW+'px';
   div.style.height=svgH+'px';
   div.appendChild(svg);
 
-  div.addEventListener('click', function() { handleClick(slot); });
-  div.addEventListener('touchend', function(e) { e.preventDefault(); handleClick(slot); }, {passive:false});
-  document.getElementById('board').appendChild(div);
+  if (!locked) {
+    attachDrag(div, slot);
+  }
+  return div;
+}
+
+/* ── DRAG & DROP ── */
+function attachDrag(div, slot) {
+  var startX, startY, origLeft, origTop, origParent, origRot;
+
+  function getXY(e) {
+    var t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX, y: t.clientY };
+  }
+
+  function onStart(e) {
+    if (!gameAlive) return;
+    e.preventDefault();
+    var pt = getXY(e);
+    startX = pt.x; startY = pt.y;
+    origLeft = parseFloat(div.style.left)||0;
+    origTop  = parseFloat(div.style.top)||0;
+    origRot  = parseFloat(div.dataset.rot)||0;
+    origParent = div.parentNode;
+
+    /* Move to body-level overlay for free dragging */
+    var boardRect = document.getElementById('board').getBoundingClientRect();
+    var scatterRect = document.getElementById('scatter').getBoundingClientRect();
+    var parentRect = origParent === document.getElementById('board') ? boardRect : scatterRect;
+    var absLeft = parentRect.left + origLeft;
+    var absTop  = parentRect.top  + origTop;
+
+    document.body.appendChild(div);
+    div.style.position = 'fixed';
+    div.style.left = absLeft + 'px';
+    div.style.top  = absTop  + 'px';
+    div.style.transform = 'rotate(0deg)';
+    div.style.zIndex = '999';
+    div.classList.add('dragging');
+    haptic('light');
+  }
+
+  function onMove(e) {
+    if (!div.classList.contains('dragging')) return;
+    e.preventDefault();
+    var pt = getXY(e);
+    var dx = pt.x - startX, dy = pt.y - startY;
+    div.style.left = (parseFloat(div.style.left)+dx) + 'px';
+    div.style.top  = (parseFloat(div.style.top)+dy)  + 'px';
+    startX = pt.x; startY = pt.y;
+
+    /* Snap preview */
+    var snapSlot = getSnapSlot(div);
+    div.classList.toggle('snap-preview', snapSlot !== null);
+  }
+
+  function onEnd(e) {
+    if (!div.classList.contains('dragging')) return;
+    e.preventDefault();
+    div.classList.remove('dragging');
+    div.style.zIndex = '';
+
+    var snapSlot = getSnapSlot(div);
+    if (snapSlot !== null) {
+      /* Place on board */
+      placePieceOnSlot(div, slot, snapSlot);
+    } else {
+      /* Return to scatter with random rotation */
+      returnToScatter(div);
+    }
+  }
+
+  div.addEventListener('mousedown',  onStart, {passive:false});
+  div.addEventListener('touchstart', onStart, {passive:false});
+  document.addEventListener('mousemove',  onMove, {passive:false});
+  document.addEventListener('touchmove',  onMove, {passive:false});
+  document.addEventListener('mouseup',  onEnd, {passive:false});
+  document.addEventListener('touchend',  onEnd, {passive:false});
+}
+
+/* Check if piece is over correct slot */
+function getSnapSlot(div) {
+  var n=gridN, SW=pieceW, SH=pieceH, P=pad;
+  var slot = parseInt(div.dataset.slot);
+  var tile  = pieces[slot];
+  /* Only snap to the CORRECT slot for this tile */
+  var correctSlot = tile; /* piece[slot]=tile, correct position = tile index */
+  var sRow=Math.floor(correctSlot/n), sCol=correctSlot%n;
+  var boardRect = document.getElementById('board').getBoundingClientRect();
+  /* Target position in viewport */
+  var targetX = boardRect.left + sCol*SW - P;
+  var targetY = boardRect.top  + sRow*SH - P;
+  var divRect = div.getBoundingClientRect();
+  var dx = Math.abs(divRect.left - targetX);
+  var dy = Math.abs(divRect.top  - targetY);
+  var snap = Math.min(SW, SH) * 0.45;
+  if (dx < snap && dy < snap) return correctSlot;
+  return null;
+}
+
+function placePieceOnSlot(div, fromSlot, toSlot) {
+  var n=gridN, SW=pieceW, SH=pieceH, P=pad;
+  /* If another piece is on toSlot — send it to scatter */
+  var existing = document.querySelector('#board .pc[data-slot="'+toSlot+'"]');
+  if (existing && !existing.classList.contains('ok')) {
+    returnToScatter(existing);
+  }
+
+  /* Swap pieces array */
+  /* fromSlot holds piece[fromSlot], toSlot holds piece[toSlot] */
+  /* We want piece[fromSlot] to go to toSlot */
+  /* Find where toSlot's tile currently lives */
+  var fromTile = pieces[fromSlot];
+  var toTile   = pieces[toSlot];
+  pieces[fromSlot] = toTile;
+  pieces[toSlot]   = fromTile;
+
+  moves++;
+  document.getElementById('mv').textContent = moves;
+  haptic('medium');
+
+  /* Remove old fromSlot piece from DOM */
+  var oldFrom = document.querySelector('#board .pc[data-slot="'+fromSlot+'"]');
+  if (oldFrom) oldFrom.remove();
+
+  /* Place div on board at correct position */
+  var sRow=Math.floor(toSlot/n), sCol=toSlot%n;
+  div.style.position='absolute';
+  div.style.left=(sCol*SW-P)+'px';
+  div.style.top=(sRow*SH-P)+'px';
+  div.style.transform='rotate(0deg)';
+  div.dataset.slot = toSlot;
+  div.classList.remove('snap-preview');
+
+  var correct = (pieces[toSlot] === toSlot);
+  if (correct) {
+    div.classList.add('ok');
+    /* Remove drag listeners by cloning */
+    var clone = div.cloneNode(true);
+    clone.classList.add('ok');
+    document.getElementById('board').appendChild(clone);
+    if (div.parentNode) div.parentNode.removeChild(div);
+    /* Mark slot */
+    var slotEl=document.querySelector('#frame .slot[data-slot="'+toSlot+'"]');
+    if(slotEl) slotEl.classList.add('filled');
+    haptic('success');
+  } else {
+    document.getElementById('board').appendChild(div);
+  }
+
+  /* If toTile's old slot (fromSlot) now has wrong piece, redraw it in scatter */
+  if (!correct && pieces[fromSlot] !== fromSlot) {
+    /* The displaced piece (toTile) now sits at fromSlot — spawn it in scatter */
+    var dispDiv = document.querySelector('#board .pc[data-slot="'+fromSlot+'"]');
+    if (!dispDiv) {
+      spawnInScatter(fromSlot,
+        document.getElementById('scatter').offsetWidth,
+        document.getElementById('scatter').offsetHeight);
+    }
+  }
+
+  updateProg(); saveGame();
+  if (isSolved()) setTimeout(onWin, 380);
+}
+
+function returnToScatter(div) {
+  var scatter = document.getElementById('scatter');
+  var scW = scatter.offsetWidth  || 300;
+  var scH = scatter.offsetHeight || 120;
+  var SW=pieceW, SH=pieceH, P=pad;
+  var maxX = Math.max(0, scW - SW - P*2);
+  var maxY = Math.max(0, scH - SH - P*2);
+  div.style.position = 'absolute';
+  div.style.left = Math.floor(Math.random()*maxX) + 'px';
+  div.style.top  = Math.floor(Math.random()*maxY) + 'px';
+  var rot = (Math.random()-0.5)*24;
+  div.style.transform = 'rotate('+rot+'deg)';
+  div.style.zIndex = '';
+  div.dataset.rot = rot;
+  scatter.appendChild(div);
 }
 
 function removePiece(slot) {
-  var el=document.querySelector('.pc[data-slot="'+slot+'"]');
-  if (el) el.remove();
+  var els = document.querySelectorAll('.pc[data-slot="'+slot+'"]');
+  els.forEach(function(el){ el.remove(); });
   document.querySelectorAll('#clipDefs clipPath').forEach(function(c) {
     if (c.id.indexOf('cp'+slot+'x')===0) c.remove();
   });
 }
 
-/* ── CLICK/SWAP ── */
-function handleClick(slot) {
-  if (!gameAlive) return;
-  var el=document.querySelector('.pc[data-slot="'+slot+'"]');
-  if (sel===null) {
-    sel=slot; if(el) el.classList.add('sel');
-    haptic('light'); return;
-  }
-  if (sel===slot) { if(el) el.classList.remove('sel'); sel=null; return; }
-  var prev=sel; sel=null;
-  swapSlots(prev,slot);
-}
-function swapSlots(a,b) {
-  var tmp=pieces[a]; pieces[a]=pieces[b]; pieces[b]=tmp;
-  moves++; document.getElementById('mv').textContent=moves;
-  haptic('medium');
-  removePiece(a); removePiece(b);
-  spawnPiece(a);  spawnPiece(b);
-  updateProg(); saveGame();
-  if (isSolved()) setTimeout(onWin,380);
-}
+/* ── CLICK/SWAP — replaced by drag & drop ── */
+function handleClick(slot) { /* no-op, drag handles interaction */ }
+function swapSlots(a,b) { /* no-op */ }
+
 function reshuffleBoard() {
   shuffleArr(pieces);
   while(isSolved()) shuffleArr(pieces);
