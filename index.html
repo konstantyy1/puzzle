@@ -598,23 +598,49 @@ function buildBoard() {
     frame.appendChild(slot);
   }
 
-  /* Scatter area size — space around the board to toss pieces */
+/* Scatter area size — enough rows to lay pieces without overlap */
   var scatter = document.getElementById('scatter');
   var scW = Math.min(vvW - 8, 590);
-  var scH = Math.max(pieceH * 2 + pad * 4, 120);
+  /* Calculate rows needed: fit pieces in columns across width */
+  var cols = Math.max(2, Math.floor(scW / (pieceW + 12)));
+  var rows = Math.ceil((n * n) / cols);
+  var scH = rows * (pieceH + 16) + 20;
   scatter.style.cssText = 'position:relative;width:'+scW+'px;height:'+scH+'px;margin-bottom:10px;touch-action:none;user-select:none;overflow:visible';
+
+  /* Pre-calculate non-overlapping positions for all pieces */
+  var positions = [];
+  var cellW = Math.floor(scW / cols);
+  var allSlots = [];
+  for (var i = 0; i < n*n; i++) {
+    if (pieces[i] !== i) allSlots.push(i);
+  }
+  /* Shuffle slots for random order */
+  for (var i = allSlots.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = allSlots[i]; allSlots[i]=allSlots[j]; allSlots[j]=tmp;
+  }
+  for (var idx = 0; idx < allSlots.length; idx++) {
+    var col = idx % cols;
+    var row = Math.floor(idx / cols);
+    /* Random jitter within cell so not perfectly aligned */
+    var jx = Math.floor((Math.random()-0.5) * Math.max(0, cellW - pieceW - pad*2) * 0.6);
+    var jy = Math.floor((Math.random()-0.5) * 10);
+    positions[allSlots[idx]] = {
+      x: col * cellW + Math.floor(cellW/2 - pieceW/2) + jx,
+      y: row * (pieceH + 16) + 8 + jy
+    };
+  }
 
   document.getElementById('mv').textContent = moves;
   updateTimerDisplay();
   updateProg();
 
-  /* Place pieces randomly in scatter area */
+  /* Place pieces in scatter or on board */
   for (var i = 0; i < n * n; i++) {
     if (pieces[i] === i) {
-      /* Already solved — place directly on board frame */
       spawnOnBoard(i);
     } else {
-      spawnInScatter(i, scW, scH);
+      spawnInScatter(i, positions[i]);
     }
   }
   sel = null;
@@ -634,20 +660,13 @@ function spawnOnBoard(slot) {
   if(slotEl) slotEl.classList.add('filled');
 }
 
-/* Spawn a piece randomly in scatter area */
-function spawnInScatter(slot, scW, scH) {
-  var n=gridN, SW=pieceW, SH=pieceH, P=pad;
+/* Spawn a piece at pre-calculated position in scatter */
+function spawnInScatter(slot, pos) {
   var tile=pieces[slot];
   var div=buildPieceDiv(slot, tile, false);
-  /* Random position with slight overlap allowed */
-  var maxX = Math.max(0, scW - SW - P*2);
-  var maxY = Math.max(0, scH - SH - P*2);
-  var rx = Math.floor(Math.random() * maxX);
-  var ry = Math.floor(Math.random() * maxY);
-  /* Random slight rotation for "lying on table" feel */
-  var rot = (Math.random() - 0.5) * 24;
-  div.style.left = rx + 'px';
-  div.style.top  = ry + 'px';
+  var rot = (Math.random()-0.5) * 20;
+  div.style.left = (pos ? pos.x : 0) + 'px';
+  div.style.top  = (pos ? pos.y : 0) + 'px';
   div.style.transform = 'rotate('+rot+'deg)';
   div.dataset.rot = rot;
   document.getElementById('scatter').appendChild(div);
@@ -869,15 +888,18 @@ function placePieceOnSlot(div, fromSlot, toSlot) {
 
 function returnToScatter(div) {
   var scatter = document.getElementById('scatter');
-  var scW = scatter.offsetWidth  || 300;
-  var scH = scatter.offsetHeight || 120;
-  var SW=pieceW, SH=pieceH, P=pad;
-  var maxX = Math.max(0, scW - SW - P*2);
-  var maxY = Math.max(0, scH - SH - P*2);
+  var scW = scatter.offsetWidth || 300;
+  var SW=pieceW+pad*2;
+  var cols = Math.max(2, Math.floor(scW / (pieceW + 12)));
+  var cellW = Math.floor(scW / cols);
+  /* Pick a random column, place at top with small jitter */
+  var col = Math.floor(Math.random() * cols);
+  var jx = Math.floor((Math.random()-0.5) * Math.max(0,cellW-SW)*0.5);
+  var jy = Math.floor(Math.random() * 20);
   div.style.position = 'absolute';
-  div.style.left = Math.floor(Math.random()*maxX) + 'px';
-  div.style.top  = Math.floor(Math.random()*maxY) + 'px';
-  var rot = (Math.random()-0.5)*24;
+  div.style.left = (col * cellW + Math.floor(cellW/2 - pieceW/2) + jx) + 'px';
+  div.style.top  = jy + 'px';
+  var rot = (Math.random()-0.5)*20;
   div.style.transform = 'rotate('+rot+'deg)';
   div.style.zIndex = '';
   div.dataset.rot = rot;
