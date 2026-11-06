@@ -57,7 +57,7 @@ const Prog = (() => {
   function achVal(id) {
     const st = S().stats;
     return { pieces: st.pieces, wins: st.wins, stars: totalStars(), perfect: st.perfect, speed: st.speed, big: st.big, streak: S().streak.best, daily: st.dailyDone,
-      coins: st.coinsEarned, heroes: S().hero.owned.length, upg: totalSkills(), own: st.own, anim: st.anim, duels: st.duels, rating: st.rmax }[id] || 0;
+      coins: st.coinsEarned, heroes: S().hero.owned.length, upg: totalSkills(), own: st.own, anim: st.anim, friends: st.friends || 0, duels: st.duels, rating: st.rmax }[id] || 0;
   }
   function achState(a) {
     const v = achVal(a.id), cl = S().ach[a.id] || 0; let r = 0;

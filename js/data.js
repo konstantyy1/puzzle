@@ -40,6 +40,7 @@ const DATA = (() => {
     { id: 'upg', ic: '🆙', n: 'Прокачка', d: 'Покращ навички героя', t: [3, 10, 20, 30, 40] },
     { id: 'own', ic: '🖼️', n: 'Своє фото', d: 'Пазли зі своїх фото', t: [1, 5, 20, 60, 200] },
     { id: 'anim', ic: '🎞️', n: 'Аніматор', d: 'Пазли зі стікерів і GIF', t: [1, 5, 20, 60, 200] },
+    { id: 'friends', ic: '🤝', n: 'Дружня команда', d: 'Додай друзів', t: [1, 3, 5, 10, 20] },
     { id: 'duels', ic: '⚔️', n: 'Боєць', d: 'Перемоги на Арені', t: [1, 10, 50, 200, 1000] },
     { id: 'rating', ic: '🏆', n: 'Рейтинг', d: 'Досягни рейтингу', t: [1100, 1300, 1500, 1700, 1900] },
   ];
@@ -75,7 +76,7 @@ const DATA = (() => {
     { id: 'galaxy', n: 'Галактика', lvl: 20, cost: 1600 }, { id: 'diamond', n: 'Діамантова', lvl: 35, cost: 3000 },
   ];
   const THEMES = [
-    { id: '', n: 'Фіолет', c: 'linear-gradient(135deg,#7c3aed,#2563eb)', lvl: 1, cost: 0 }, { id: 'ocean', n: 'Океан', c: 'linear-gradient(135deg,#0ea5e9,#6366f1)', lvl: 2, cost: 0 },
+    { id: '', n: 'Сяйво', c: 'linear-gradient(135deg,#167fbc,#4e66e8)', lvl: 1, cost: 0 }, { id: 'ocean', n: 'Океан', c: 'linear-gradient(135deg,#0ea5e9,#6366f1)', lvl: 2, cost: 0 },
     { id: 'neon', n: 'Неон', c: 'linear-gradient(135deg,#00d97e,#00a3ff)', lvl: 1, cost: 300 }, { id: 'sunset', n: 'Захід', c: 'linear-gradient(135deg,#f97316,#ef4444)', lvl: 1, cost: 300 },
     { id: 'forest', n: 'Ліс', c: 'linear-gradient(135deg,#22c55e,#15803d)', lvl: 6, cost: 0 }, { id: 'rose', n: 'Троянда', c: 'linear-gradient(135deg,#f43f5e,#a855f7)', lvl: 12, cost: 0 },
     { id: 'gold', n: 'Золото', c: 'linear-gradient(135deg,#eab308,#d97706)', lvl: 25, cost: 1200 },

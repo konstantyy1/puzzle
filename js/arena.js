@@ -37,6 +37,7 @@ const Arena = (() => {
     x += '<button class="btn btn-g" data-a="arFind">⚔️ ' + (ranked ? 'Рейтинговий бій' : 'Знайти суперника') + '</button>';
     x += '<div class="mut small tc mt">' + (ranked ? 'Перемога піднімає рейтинг і лігу, поразка — знижує' : 'Тренувальний бій без зміни рейтингу') +
       (online === false ? '<br>⚠️ Сервер недоступний — бій буде з ботом, без рейтингу' : '') + '</div>';
+    x += '<button class="btn btn-s mt" data-go="friends">🤝 Друзі та виклики</button>';
     x += '<div class="card mt"><div class="h2">' + h.e + ' Твій боєць <span class="r">' + h.sp.ic + ' ' + h.sp.n + '</span></div><div class="grid3">' +
       UI.stat(Prog.B.hp(), 'Здоров’я') + UI.stat('×' + Prog.B.atk().toFixed(2), 'Шкода') + UI.stat('+' + Math.round((Prog.B.en() - 1) * 100) + '%', 'Енергія') + '</div>' +
       '<div class="rd mt">' + h.sp.ic + ' ' + h.sp.d + '. Сила, витривалість і енергія прокачуються на вкладці «Герой».</div></div>';
@@ -167,7 +168,7 @@ const Arena = (() => {
     else if (id === 'fire') { m.my.d += F.fireDmg; pop($('fOpAv'), '−' + F.fireDmg, true); }
     else if (id === 'claws') m.my.claws = 3;
     if (m.bot) { const b = m.b, now = Date.now(); if (id === 'freeze') b.next = Math.max(b.next, now) + F.frzMs; else if (id === 'fog') b.next = Math.max(b.next, now) + F.fogMs * 0.6; else if (id === 'shuffle') b.next = Math.max(b.next, now) + 1800; }
-    banner(h.sp.ic + ' ' + h.sp.n + '!'); UI.hap('heavy'); hud(); check(); pushSoon();
+    banner(h.sp.ic + ' ' + h.sp.n + '!'); Soundscape.play('skill'); UI.hap('heavy'); hud(); check(); pushSoon();
   }
   $('skBtn').onclick = special;
   function oppSkill(id) {
@@ -257,7 +258,7 @@ const Arena = (() => {
     const me = hpMe(m), op = hpOp(m);
     const r = Prog.arenaEnd({ win: res === 'win', ranked: m.ranked, bot: m.bot, rt: rr && typeof rr.rt === 'number' ? rr.rt : undefined, pieces: m.my.p });
     for (const k in lbT) lbT[k] = 0;
-    UI.hap(res === 'win' ? 'ok' : 'err');
+    Soundscape.play(res === 'win' ? 'win' : 'lose'); UI.hap(res === 'win' ? 'ok' : 'err');
     banner(res === 'win' ? '🏆 Перемога!' : res === 'draw' ? '🤝 Нічия' : '💔 Поразка', 1300);
     await UI.sleep(1300);
     if (M !== m) return;
@@ -300,5 +301,5 @@ const Arena = (() => {
     arBoard: v => { board = v; UI.hap('sel'); UI.refresh(); },
     arFind: () => find(),
   };
-  return { A, api, sync, ready, onPlace, onMiss, onFinish, surrender, cleanup, loadFail, find, get M() { return M; }, get online() { return online; } };
+  return { A, api, sync, start, ready, onPlace, onMiss, onFinish, surrender, cleanup, loadFail, find, get M() { return M; }, get online() { return online; } };
 })();

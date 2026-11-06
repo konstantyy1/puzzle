@@ -7,7 +7,7 @@
     try { TG.ready(); } catch (e) {}
     try { TG.expand(); } catch (e) {}
     try { if (V('7.7')) TG.disableVerticalSwipes(); } catch (e) {}
-    try { if (V('6.1')) { TG.setHeaderColor('#0a0a14'); TG.setBackgroundColor('#0a0a14'); } if (V('7.10')) TG.setBottomBarColor('#0a0a14'); } catch (e) {}
+    try { if (V('6.1')) { TG.setHeaderColor('#0a1424'); TG.setBackgroundColor('#0a1424'); } if (V('7.10')) TG.setBottomBarColor('#0a1424'); } catch (e) {}
     try { if (V('6.1')) TG.BackButton.onClick(() => UI.back()); } catch (e) {}
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') UI.back(); });
@@ -17,6 +17,7 @@
   Prog.checkStreak(); Prog.ensureDaily(); Prog.unlockFree(); Store.save();
   UI.applyTheme();
   const q = new URLSearchParams(location.search);
+  const friend = q.get('friend'), duel = q.get('duel');
   const media = q.get('src') && q.get('sig') ? { d: q.get('src'), s: q.get('sig'), g: +q.get('g') || 4 } : null;
   UI.show('home');
   $('loader').classList.add('off'); setTimeout(() => { const l = $('loader'); if (l) l.remove(); }, 500);
@@ -34,7 +35,10 @@
       '🎞️ Надішли боту стікер, GIF або фото — і збирай його як пазл!</p><button class="btn btn-g" id="wOk">Почати!</button>', { onClose: () => { if (Prog.streakReady()) setTimeout(dailyPopup, 300); } });
     b.querySelector('#wOk').onclick = () => UI.closeModal();
   }
-  if (media) {
+  if (friend || duel) {
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    if (friend) Social.acceptFriend(friend); else Social.acceptDuel(duel);
+  } else if (media) {
     try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
     UI.openMedia(media);
   } else if (!S.seen.tut && !S.stats.games) setTimeout(welcome, 400);

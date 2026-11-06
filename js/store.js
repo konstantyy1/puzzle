@@ -16,7 +16,7 @@ const Store = (() => {
     daily: { day: '', tasks: [], chest: 0, gift: '' },
     streak: { last: '', n: 0, best: 0, claim: '' },
     arena: { rt: 1000, w: 0, l: 0, games: 0, alias: '' },
-    media: [], set: { haptic: 1 }, seen: {},
+    media: [], set: { haptic: 1, music: 1, sfx: 1 }, seen: {},
   });
   const merge = (d, s) => {
     if (!s || typeof s !== 'object') return d;
