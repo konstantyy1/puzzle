@@ -54,6 +54,7 @@ const UI = (() => {
   /* reward feedback */
   function rewardToast(r, pre) {
     if (!r) return;
+    Soundscape.play('reward');
     const c = typeof r === 'number' ? r : r.coins, x = r.xp && (r.xp.xp != null ? r.xp.xp : r.xp);
     toast((pre ? pre + ' ' : '') + (c ? '+' + c + ' 🪙' : '') + (x ? '  +' + x + ' XP' : ''));
     hap('ok'); const ups = r.xp && r.xp.ups; if (ups && ups.length) setTimeout(() => levelUp(ups), 900);
@@ -75,7 +76,7 @@ const UI = (() => {
     o = o || {};
     if (cur === 'gs' && id !== 'gs') Ctl.leave();
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
-    cur = id; if (TABS.includes(id)) backTo = id;
+    cur = id; if (id !== 'gs') Soundscape.setScene('menu'); if (TABS.includes(id)) backTo = id;
     $('tabbar').classList.toggle('hide', !TABS.includes(id));
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === id));
     if (R[id]) R[id]();
@@ -106,7 +107,7 @@ const UI = (() => {
   /* shared bits */
   function avatar(big) {
     const u = Store.user, fr = S().cos.frame, e = Prog.hero().e;
-    const inner = u && u.photo_url ? '<img src="' + esc(u.photo_url) + '" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'\'"><span style="display:none">' + e + '</span>' : '<span>' + e + '</span>';
+    const inner = u && /^https:\/\//i.test(u.photo_url || '') ? '<img src="' + esc(u.photo_url) + '" alt="" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'\'"><span style="display:none">' + e + '</span>' : '<span>' + e + '</span>';
     return '<div class="av' + (big ? ' big' : '') + (fr ? ' fr-' + fr : '') + '">' + inner + '<span class="lv">' + Prog.level() + '</span></div>';
   }
   const coinsPill = () => '<span class="pill"><span class="coin">🪙</span><b>' + fmt(S().coins) + '</b></span>';
@@ -127,7 +128,7 @@ const UI = (() => {
   R.home = () => {
     Prog.ensureDaily();
     const L = Prog.lvlInfo(S().xp), h = Prog.hero(), hl = Prog.heroLvl(), lv = Prog.curLevel(), sv = Store.gsave.get(), a = S().arena, lg = D.league(a.rt);
-    let x = '<div class="topbar">' + avatar() + '<div class="pinfo"><div class="pname">' + uname() + '</div><div class="ptitle">' + Prog.title(L.L) + ' · рівень ' + L.L + '</div>' +
+    let x = '<header class="brand"><img src="assets/mark.svg" alt=""><div><b>Фото Пазл</b><span>Збирай свою історію</span></div><span class="brand-tag">MINI APP</span></header><div class="topbar">' + avatar() + '<div class="pinfo"><div class="pname">' + uname() + '</div><div class="ptitle">' + Prog.title(L.L) + ' · рівень ' + L.L + '</div>' +
       '<div class="bar"><i style="width:' + pct(L.cur, L.need) + '%"></i></div></div>' + coinsPill() + '</div>';
     x += '<div class="card hero-mini" data-go="hero">' + heroFace(h, hl.L) + '<div class="rmid"><div class="rt">' + h.n + '</div><div class="rd">Герой ' + hl.L + ' рівня · ' + h.sp.ic + ' ' + h.sp.n + '</div>' +
       '<div class="bar"><i style="width:' + (hl.max ? 100 : pct(hl.cur, hl.need)) + '%"></i></div></div><span class="mut" style="font-size:20px">›</span></div>';
@@ -135,6 +136,7 @@ const UI = (() => {
     x += lv ? '<button class="cta" data-a="lvl" data-v="' + lv.id + '"><span class="ci">' + D.CH[lv.ch].ic + '</span><div><b>Рівень ' + lv.id + ' · ' + lv.g + '×' + lv.g + '</b><span>' + D.CH[lv.ch].n + (lv.timed ? ' · ⏱️ на час' : '') + ' · ⭐ ' + Prog.totalStars() + '/150</span></div></button>'
       : '<button class="cta" data-go="levels"><span class="ci">👑</span><div><b>Кампанію пройдено!</b><span>Збери всі ⭐ ' + Prog.totalStars() + '/150</span></div></button>';
     x += '<button class="cta s2" data-a="duel"><span class="ci">⚔️</span><div><b>Бій онлайн</b><span>' + lg.ic + ' ' + lg.n + ' · рейтинг ' + a.rt + '</span></div></button>';
+    x += '<button class="friend-link" data-go="friends"><span>🤝 Друзі та виклики</span><span>›</span></button>';
     const st = S().streak;
     x += '<div class="tiles">' + tile('daily', '📋', 'Щоденні', '🔥 ' + st.n + ' ' + plural(st.n, 'день', 'дні', 'днів') + ' поспіль', Prog.dailyBadge()) +
       tile('free', '🖼️', 'Свій пазл', 'Фото, стікер або GIF') + tile('ach', '🏆', 'Досягнення', D.ACH.reduce((s, q) => s + (S().ach[q.id] || 0), 0) + '/' + D.ACH.length * 5 + ' рівнів', Prog.achBadge()) +
@@ -263,6 +265,8 @@ const UI = (() => {
         (own ? '' : '<span class="lk">' + (lv < t.lvl ? '🔒' + t.lvl : '🪙' + t.cost) + '</span>') + '</button>';
     }).join('') + '</div>';
     x += '<div class="sl">Налаштування</div>' + row('📳', 'Вібрація', 'Відгук при встановленні деталей', '<button class="sbtn s2" data-a="hapt">' + (S().set.haptic ? 'Увімк.' : 'Вимк.') + '</button>') +
+      row('🎵', 'Музика', 'Оригінальна мелодія змінюється залежно від режиму', '<button class="sbtn s2" data-a="music">' + (S().set.music ? 'Увімк.' : 'Вимк.') + '</button>') +
+      row('🔊', 'Звукові ефекти', 'Деталі, нагороди та бої', '<button class="sbtn s2" data-a="sfx">' + (S().set.sfx ? 'Увімк.' : 'Вимк.') + '</button>') +
       '<button class="btn btn-d mt" data-a="reset">Скинути весь прогрес</button><div class="mut small tc mt">Прогрес зберігається в Telegram і синхронізується між пристроями</div>';
     $('profileW').innerHTML = x;
   };
@@ -327,6 +331,8 @@ const UI = (() => {
     hero: v => heroModal(v),
     frame: v => buyCos('frame', v),
     theme: v => buyCos('theme', v),
+    music: () => { S().set.music = S().set.music ? 0 : 1; Store.save(); Soundscape.unlock(); Soundscape.update(); refresh(); },
+    sfx: () => { S().set.sfx = S().set.sfx ? 0 : 1; Store.save(); Soundscape.unlock(); Soundscape.play('tap'); refresh(); },
     hapt: () => { S().set.haptic = S().set.haptic ? 0 : 1; Store.save(); hap('ok'); refresh(); },
     reset: async () => { if (await ask({ ic: '⚠️', t: 'Скинути прогрес?', d: 'Рівні, монети, герої й досягнення буде видалено назавжди.', ok: 'Скинути', danger: 1 })) { Store.reset(); Prog.ensureDaily(); applyTheme(); show('home'); toast('Прогрес скинуто'); } },
     upload: () => $('fileIn').click(),
@@ -337,6 +343,7 @@ const UI = (() => {
     fplay: () => Ctl.play({ kind: 'free', g: fg, mode: fmode, src: fsel }),
   };
   document.addEventListener('click', e => {
+    if (e.target.closest('button,[data-go]')) Soundscape.play('tap');
     const g = e.target.closest('[data-go]'); if (g) { hap('sel'); if (g.closest('#mbox')) closeModal(); return go(g.dataset.go); }
     const a = e.target.closest('[data-a]'); if (!a) return;
     const f = A[a.dataset.a] || (Arena.A && Arena.A[a.dataset.a]); if (f) f(a.dataset.v, a, e);
@@ -365,13 +372,13 @@ const UI = (() => {
       const cv = $('cov'), sp = cv.querySelector('span'); cv.classList.add('on');
       const pop = t => { sp.textContent = t; sp.style.animation = 'none'; void sp.offsetWidth; sp.style.animation = ''; };
       sp.style.fontSize = '';
-      for (let i = n; i > 0; i--) { pop(i); hap('light'); await sleep(750); }
-      sp.style.fontSize = '54px'; pop('Старт!'); hap('heavy'); await sleep(450); cv.classList.remove('on'); sp.style.fontSize = '';
+      for (let i = n; i > 0; i--) { pop(i); Soundscape.play('countdown'); hap('light'); await sleep(750); }
+      sp.style.fontSize = '54px'; pop('Старт!'); Soundscape.play('start'); hap('heavy'); await sleep(450); cv.classList.remove('on'); sp.style.fontSize = '';
     }
     async function play(cfg) {
       const my = ++tok; end(); last = cfg;
       show('gs');
-      const fight = cfg.kind === 'fight';
+      const fight = cfg.kind === 'fight'; Soundscape.setScene(fight ? 'fight' : 'game');
       $('fhud').classList.toggle('on', fight); $('gTime').classList.toggle('hidden', fight);
       ['gHint', 'gGhost'].forEach(id => $(id).classList.toggle('hidden', fight));
       $('skBtn').classList.toggle('hidden', !fight); $('fxFog').classList.remove('on'); $('fxFrz').classList.remove('on');
@@ -414,8 +421,8 @@ const UI = (() => {
       $('gBar').style.width = pct(n, N) + '%'; $('gPct').textContent = n + '/' + N;
       const h = hintsLeft(); $('gHintN').textContent = h > 99 ? '99+' : h; $('gHint').classList.toggle('off', !h);
     }
-    function onPlace(i) { if (!C) return; if (!i.hint) C.user++; hap(i.hint ? 'light' : 'medium'); hud(); save(); if (C.cfg.kind === 'fight') Arena.onPlace(i); }
-    function onMiss() { if (!C) return; hap('warn'); if (C.cfg.kind === 'fight') Arena.onMiss(); }
+    function onPlace(i) { if (!C) return; if (!i.hint) C.user++; Soundscape.play(i.hint ? 'hint' : 'place'); hap(i.hint ? 'light' : 'medium'); hud(); save(); if (C.cfg.kind === 'fight') Arena.onPlace(i); }
+    function onMiss() { if (!C) return; Soundscape.play('miss'); hap('warn'); if (C.cfg.kind === 'fight') Arena.onMiss(); }
     function save() {
       if (!C || C.over || C.cfg.kind === 'fight' || C.cfg.src.t === 'file' || !Game.st) return;
       const s = Game.st; if (s.placed.length >= s.P.length) return;
@@ -444,12 +451,12 @@ const UI = (() => {
       if (cfg.kind === 'camp') { const L = D.LEVELS.find(l => l.id === cfg.lvl); stars = t <= L.par ? 3 : t <= L.par * 1.8 ? 2 : 1; }
       const k = srcKind(cfg.src);
       const r = Prog.gameEnd({ kind: cfg.kind, lvl: cfg.lvl, g: cfg.g, mode: cfg.mode, time: t, pieces: C.user, win: true, stars, perfect, timed: !!C.limit, own: k === 'own', anim: k === 'anim' });
-      hap('ok'); confetti(); result({ win: true, t, stars, perfect, r });
+      Soundscape.play('win'); hap('ok'); confetti(); result({ win: true, t, stars, perfect, r });
     }
     function lose() {
       if (!C || C.over) return; C.over = true; clearInterval(tmr); Store.gsave.set(null); Game.freeze(1e9);
       const cfg = C.cfg, r = Prog.gameEnd({ kind: cfg.kind, lvl: cfg.lvl, g: cfg.g, mode: cfg.mode, time: el(), pieces: C.user, win: false });
-      hap('err'); $('gTime').textContent = '⏱️ 0:00';
+      Soundscape.play('lose'); hap('err'); $('gTime').textContent = '⏱️ 0:00';
       setTimeout(() => { if (C && C.cfg === cfg) result({ win: false, r }); }, 700);
     }
     function result(o) {
