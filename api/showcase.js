@@ -13,6 +13,7 @@ export default async function handler(req,res){
   if(!hasKV&&process.env.VERCEL)return res.status(503).json({err:'nokv'});
   try {
     const q=req.query||{};
+    if(req.method==='GET' && ['feed','profile','media'].includes(q.op)) return res.status(503).json({err:'paused'});
     if(req.method==='GET'){
       if(q.op==='feed')return res.json({list:(await loadItems('show:feed',100)).map(x=>safeItem(x))});
       if(q.op==='profile'&&validId(q.id)){const uid=await cmd('GET','show:profile:'+q.id);if(!uid)return res.json({list:[]});return res.json({list:(await loadItems('show:user:'+uid,12)).map(x=>safeItem(x))});}
@@ -30,6 +31,7 @@ export default async function handler(req,res){
     const b=await readJson(req), u=checkInit(b.init);if(!u||!Number.isSafeInteger(u.id)||u.id<=0)return res.status(401).json({err:'telegram'});
     const uid='t'+u.id;
     if(b.op==='mine')return res.json({list:(await loadItems('show:user:'+uid,12,true)).map(x=>safeItem(x,true))});
+    if(b.op==='publish')return res.status(503).json({err:'paused'});
     if(b.op==='publish'){
       let kind=String(b.kind||''),data='';
       if(kind==='file'){data=b.image;if(!validJpeg(data))return res.status(400).json({err:'image'});}
