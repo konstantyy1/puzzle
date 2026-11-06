@@ -1,9 +1,16 @@
-/* One-time setup: open https://<your-app>.vercel.app/api/setup after deploy */
+/* One-time setup: authenticated POST using SETUP_KEY. */
+import crypto from 'node:crypto';
 import { tg } from './_lib/tg.js';
 import { hookSecret, appUrl, TOKEN } from './_lib/util.js';
 import { hasKV } from './_lib/kv.js';
 
 export default async function handler(req, res) {
+  const key = process.env.SETUP_KEY || '';
+  const supplied = String(req.headers['x-setup-key'] || '');
+  const a = Buffer.from(key), b = Buffer.from(supplied);
+  if (req.method !== 'POST' || !key || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(403).send('Forbidden');
+  }
   const app = appUrl(req), out = [];
   if (!TOKEN) out.push(['❌', 'Не задано BOT_TOKEN: Vercel → Settings → Environment Variables → BOT_TOKEN, потім Redeploy']);
   else {

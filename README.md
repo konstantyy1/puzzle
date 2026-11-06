@@ -12,10 +12,10 @@
 
 ## Запуск на Vercel
 1. **Add New → Project →** імпортуй цей репозиторій (Framework Preset: **Other**, без Build Command).
-2. **Settings → Environment Variables:** `BOT_TOKEN` = токен від @BotFather.
+2. **Settings → Environment Variables:** `BOT_TOKEN` = токен від @BotFather; `APP_URL` = публічна адреса гри; `SETUP_KEY` = довгий випадковий секрет для захисту налаштування.
 3. **Storage → Upstash for Redis** (безкоштовний план) **→ Connect Project** — це база для Арени й рейтингу.
 4. **Deployments → Redeploy**.
-5. Відкрий у браузері `https://<твій-проєкт>.vercel.app/api/setup` — бот отримає вебхук, кнопку меню «Грати» і команди.
+5. Надішли POST-запит на `https://<твій-проєкт>.vercel.app/api/setup` із заголовком `X-Setup-Key`, що містить значення `SETUP_KEY`. Бот отримає вебхук, кнопку меню «Грати» і команди. Не публікуй секрет.
 6. (За потреби) у @BotFather → Bot Settings → Configure Mini App / Menu Button вкажи нову адресу.
 
 Необов’язково: `APP_URL` — власний домен, якщо він відрізняється від адреси Vercel.
