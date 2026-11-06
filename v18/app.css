@@ -1,0 +1,6 @@
+.custom-bg{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.custom-bg.on{display:block}.custom-bg img{display:block;width:100%;height:100%;object-fit:cover;opacity:1}.bg-tabs{margin:12px 0}.bg-current{margin:12px 0;padding:12px;text-align:left;background:rgba(255,255,255,.05);border-radius:12px;font-size:13px;color:#b9c8d7}.bg-current b{color:#fff}.bg-label{display:block;text-align:left;color:#c8d7e4;font-size:13px;font-weight:700;margin:14px 0 6px}#bgLevel{width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid #5d7992;background:#13243b;color:#fff;font:inherit}.bg-hint{margin:8px 0 12px;color:#b9c8d7;font-size:12px;line-height:1.4}#bgLevelSave:disabled{opacity:.5}
+
+/* Keep controls legible without tinting the image itself. */
+body.has-custom-bg{--card:rgba(16,31,49,.96);--glass:rgba(32,46,66,.96);--mut:rgba(255,255,255,.78)}
+body.has-custom-bg .profile-hero{background:linear-gradient(125deg,rgba(25,102,141,.3),rgba(74,83,162,.18)),#112239}
+body.has-custom-bg .sl,body.has-custom-bg .sub,body.has-custom-bg .h1{text-shadow:0 1px 4px #06101e,0 0 8px #06101e}
