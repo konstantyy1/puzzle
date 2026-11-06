@@ -41,6 +41,12 @@ async function onMsg(msg, app) {
       [{ text: '🔥 5×5', web_app: { url: link(5) } }, { text: '💀 6×6', web_app: { url: link(6) } }]]);
   }
   const t = (msg.text || '').trim();
+  const inv = t.match(/^\/start(?:@\w+)?\s+([fd])_([A-Za-z0-9]{24})$/);
+  if (inv) {
+    const kind = inv[1] === 'f' ? 'friend' : 'duel';
+    const label = kind === 'friend' ? '🤝 Прийняти запрошення в друзі' : '⚔️ Прийняти виклик на дуель';
+    return reply('🧩 ' + (kind === 'friend' ? 'Тебе запрошують у друзі!' : 'Тебе викликали на дуель!') + '\nВідкрий гру та підтверди:', [[{ text: label, web_app: { url: app + '/?' + kind + '=' + inv[2] } }]]);
+  }
   if (/^\/help/.test(t)) return reply(HELP, [play]);
   if (/^\/(start|play)/.test(t)) return reply(WELCOME, [play]);
   if (t) return reply('Надішли мені <b>стікер</b>, <b>GIF</b>, <b>фото</b> або <b>відео</b> — і я зроблю з нього пазл 🧩', [play]);

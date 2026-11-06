@@ -81,6 +81,67 @@ async function decide(m, A, B) {
   return res;
 }
 const OPS = {
+  // Social operations accept only Telegram-signed identities, never guest IDs.
+  async friends(uid) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const ids = (await cmd('SMEMBERS', 'friends:' + uid)).slice(0, 100);
+    const rows = ids.length ? await cmd('MGET', ...ids.map(id => 'u:' + id)) : [];
+    return { list: ids.map((id, i) => { const u = parse(rows[i]) || {}; return { id, a: u.a || alias(id), h: u.h || 'fox', l: u.lv || 1 }; }) };
+  },
+  async friendInvite(uid) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const id = rid(24); await jset('fi:' + id, { uid }, 7 * 86400); return { code: id };
+  },
+  async friendAccept(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const code = String(b.code || ''); if (!/^[A-Za-z0-9]{24}$/.test(code)) return { err: 'invite' };
+    const key = 'fi:' + code, v = await jget(key);
+    if (!v || !v.uid || !v.uid.startsWith('t')) return { err: 'expired' };
+    if (v.uid === uid) return { err: 'self' };
+    const taken = parse(await cmd('GETDEL', key)); if (!taken || taken.uid !== v.uid) return { err: 'expired' };
+    await pipe([['SADD', 'friends:' + uid, v.uid], ['SADD', 'friends:' + v.uid, uid]]);
+    return { ok: 1, a: (await user(v.uid)).a };
+  },
+  async friendRemove(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const id = String(b.id || ''); if (!/^t[0-9]+$/.test(id) || id === uid) return { err: 'friend' };
+    await pipe([['SREM', 'friends:' + uid, id], ['SREM', 'friends:' + id, uid]]); return { ok: 1 };
+  },
+  async duelCreate(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const target = String(b.id || '');
+    if (!/^t[0-9]+$/.test(target) || !(await cmd('SISMEMBER', 'friends:' + uid, target))) return { err: 'friend' };
+    const u = await user(uid); applyProf(u, b); await jset('u:' + uid, u);
+    const code = rid(24); await jset('di:' + code, { uid, target, p: pub(u) }, 600);
+    return { code };
+  },
+  async duelJoin(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const code = String(b.code || ''); if (!/^[A-Za-z0-9]{24}$/.test(code)) return { err: 'invite' };
+    const key = 'di:' + code, invite = await jget(key);
+    if (!invite) return { err: 'expired' };
+    if (invite.uid === uid || invite.target !== uid) return { err: 'recipient' };
+    if (!(await cmd('SISMEMBER', 'friends:' + uid, invite.uid))) return { err: 'friend' };
+    const taken = parse(await cmd('GETDEL', key)); if (!taken || taken.uid !== invite.uid) return { err: 'expired' };
+    const u = await user(uid); applyProf(u, b); await jset('u:' + uid, u);
+    const m = newMatch(0, 0, Object.assign({ uid: invite.uid }, invite.p), Object.assign({ uid }, pub(u)), 12000);
+    await pipe([['SET', 'm:' + m.id, JSON.stringify(m), 'EX', 900], ['SET', 'diresult:' + code, JSON.stringify({ mid: m.id, side: 'a', uid: invite.uid }), 'EX', 90]]);
+    return view(m, 'b');
+  },
+  async duelPoll(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const code = String(b.code || ''); if (!/^[A-Za-z0-9]{24}$/.test(code)) return { err: 'invite' };
+    const done = await jget('diresult:' + code);
+    if (done && done.uid === uid) { const m = await jget('m:' + done.mid); return m ? view(m, 'a') : { err: 'expired' }; }
+    const inv = await jget('di:' + code); if (!inv || inv.uid !== uid) return { err: 'expired' };
+    return { wait: true };
+  },
+  async duelCancel(uid, b) {
+    if (!uid.startsWith('t')) return { err: 'telegram' };
+    const code = String(b.code || ''); if (!/^[A-Za-z0-9]{24}$/.test(code)) return { err: 'invite' };
+    const inv = await jget('di:' + code); if (inv && inv.uid === uid) await cmd('DEL', 'di:' + code);
+    return { ok: 1 };
+  },
   async sync(uid, b) {
     const u = await user(uid); applyProf(u, b);
     await pipe([['SET', 'u:' + uid, JSON.stringify(u)], ['ZADD', 'lb:lvl', u.xp || 0, uid]]);
