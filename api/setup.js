@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     if (me.ok && String(me.result.username || '').toLowerCase() !== 'fotopuzzle_bot') {
       out.push(['❌', 'Токен належить іншому боту; налаштування не змінено']);
     } else if (me.ok) {
-      const wh = await tg('setWebhook', { url: app + '/api/bot', secret_token: hookSecret(), allowed_updates: ['message'], drop_pending_updates: true });
+      const wh = await tg('setWebhook', { url: app + '/api/bot', secret_token: hookSecret(), allowed_updates: ['message', 'callback_query'], drop_pending_updates: false });
       out.push([wh.ok ? '✅' : '❌', 'Webhook → ' + app + '/api/bot' + (wh.ok ? '' : ': ' + wh.description)]);
       const mb = await tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Грати', web_app: { url: app + '/' } } });
       out.push([mb.ok ? '✅' : '❌', 'Кнопка меню «Грати» → ' + app + '/' + (mb.ok ? '' : ': ' + mb.description)]);
