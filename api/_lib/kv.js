@@ -2,7 +2,7 @@
 const U = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
 const T = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
 export const hasKV = !!(U && T);
-const mem = globalThis.__pzmem || (globalThis.__pzmem = { kv: new Map(), z: new Map() });
+const mem = globalThis.__pzmem || (globalThis.__pzmem = { kv: new Map(), z: new Map(), sets: new Map() });
 function zsorted(k) { const z = mem.z.get(k) || new Map(); return [...z.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? 1 : -1)); }
 function memCmd(a) {
   const c = String(a[0]).toUpperCase(), now = Date.now();
@@ -18,6 +18,10 @@ function memCmd(a) {
     case 'DEL': { let n = 0; for (const k of a.slice(1)) if (mem.kv.delete(k)) n++; return n; }
     case 'MGET': return a.slice(1).map(get);
     case 'EXPIRE': { const e = mem.kv.get(a[1]); if (e) e.x = now + a[2] * 1000; return e ? 1 : 0; }
+    case 'SADD': { const ss = mem.sets.get(a[1]) || new Set(); mem.sets.set(a[1], ss); let n = 0; for (const v of a.slice(2)) { if (!ss.has(String(v))) { ss.add(String(v)); n++; } } return n; }
+    case 'SREM': { const ss = mem.sets.get(a[1]) || new Set(); let n = 0; for (const v of a.slice(2)) if (ss.delete(String(v))) n++; return n; }
+    case 'SMEMBERS': return [...(mem.sets.get(a[1]) || new Set())];
+    case 'SISMEMBER': return (mem.sets.get(a[1]) || new Set()).has(String(a[2])) ? 1 : 0;
     case 'ZADD': { const z = mem.z.get(a[1]) || new Map(); mem.z.set(a[1], z); for (let i = 2; i + 1 < a.length; i += 2) z.set(String(a[i + 1]), +a[i]); return 1; }
     case 'ZREVRANGE': { const r = zsorted(a[1]).slice(+a[2], +a[3] + 1); return String(a[4] || '').toUpperCase() === 'WITHSCORES' ? r.flatMap(([m, s]) => [m, String(s)]) : r.map(x => x[0]); }
     case 'ZREVRANK': { const i = zsorted(a[1]).findIndex(x => x[0] === String(a[2])); return i < 0 ? null : i; }
