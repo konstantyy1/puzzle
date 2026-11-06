@@ -124,9 +124,9 @@ const OPS = {
     const id=String(b.id||''); if(!/^t[0-9]+$/.test(id) || id===uid) return {err:'friend'};
     const checks=await pipe([['SISMEMBER','friends:'+uid,id],['SISMEMBER','friends:'+id,uid]]);
     if(!checks[0] || !checks[1])return {err:'friend'};
-    const [u,stats,ids,avatars,publicId]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id]),avatarMap(uid,[id]),cmd('GET','show:pub:'+id)]);
+    const [u,stats,ids,avatars]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id]),avatarMap(uid,[id])]);
     const identity=ids[id]||{};
-    return {profile:{avatar:avatars[id]||null,name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,details:stats?.more||null,publicId:publicId||null,updated:stats?.ts||null}};
+    return {profile:{avatar:avatars[id]||null,name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,details:stats?.more||null,updated:stats?.ts||null}};
   },
   async friendSnapshot(uid,b) {
     if (!uid.startsWith('t')) return {err:'telegram'};
