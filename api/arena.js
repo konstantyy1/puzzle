@@ -23,6 +23,12 @@ function applyProf(u, b) {
   if (b.lvl) u.lv = num(b.lvl, 1, 200); if (b.xp !== undefined) u.xp = num(b.xp, 0, 1e9); if (b.hp) u.hp = num(b.hp, 50, 400);
   u.ts = now();
 }
+async function saveFriendSnapshot(uid,b) {
+  const d=b.fstats;if (!uid.startsWith('t') || !d || typeof d !== 'object' || Array.isArray(d)) return;
+  const n=(v,max)=>Math.floor(num(v,0,max));
+  const snap={hero:HEROES.some(h=>h[0]===b.hero)?b.hero:'fox',level:Math.max(1,n(b.lvl,200)),heroLevel:Math.max(1,n(d.heroLevel,30)),puzzles:n(d.puzzles,10000000),stars:n(d.stars,150),achievements:n(d.achievements,85),teamwins:n(d.teamwins,10000000),ts:now()};
+  await jset('friendstats:'+uid,snap);
+}
 const pub = u => ({ a: u.a, h: u.h, l: u.lv || 1, rt: u.rt, hp: u.hp || 100 });
 const view = (m, side) => { const o = side === 'a' ? m.b : m.a; return { mid: m.id, side, seed: m.seed, g: m.g, pid: m.pid, ranked: m.rk, bot: m.bot, t0: m.t0, now: now(), opp: { a: o.a, h: o.h, l: o.l, rt: o.rt, hp: o.hp } }; };
 const friendView = async (m, side, uid) => { const o=side==='a'?m.b:m.a, out=view(m,side), ids=await friendIdentities(uid,[o.uid]); out.opp.a=friendLabel(ids[o.uid],o.a); return out; };
@@ -90,6 +96,19 @@ const OPS = {
     const identities = await friendIdentities(uid,ids);
     return { list: ids.map((id, i) => { const u = parse(rows[i]) || {}, p = identities[id] || {}; return { id, a: u.a || alias(id), name:p.name || '', username:p.username || '', h: u.h || 'fox', l: u.lv || 1 }; }) };
   },
+  async friendProfile(uid,b) {
+    if (!uid.startsWith('t')) return {err:'telegram'};
+    const id=String(b.id||''); if(!/^t[0-9]+$/.test(id) || id===uid) return {err:'friend'};
+    const checks=await pipe([['SISMEMBER','friends:'+uid,id],['SISMEMBER','friends:'+id,uid]]);
+    if(!checks[0] || !checks[1])return {err:'friend'};
+    const [u,stats,ids]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id])]);
+    const identity=ids[id]||{};
+    return {profile:{name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,updated:stats?.ts||null}};
+  },
+  async friendSnapshot(uid,b) {
+    if (!uid.startsWith('t')) return {err:'telegram'};
+    await saveFriendSnapshot(uid,b); return {ok:1};
+  },
   async friendInvite(uid) {
     if (!uid.startsWith('t')) return { err: 'telegram' };
     const id = rid(24); await jset('fi:' + id, { uid }, 7 * 86400); return { code: id };
@@ -147,6 +166,7 @@ const OPS = {
   async sync(uid, b) {
     const u = await user(uid); applyProf(u, b);
     await pipe([['SET', 'u:' + uid, JSON.stringify(u)], ['ZADD', 'lb:lvl', u.xp || 0, uid]]);
+    await saveFriendSnapshot(uid,b);
     return { rt: u.rt, w: u.w, l: u.l, alias: u.a, kv: hasKV };
   },
   async top(uid, b) {
