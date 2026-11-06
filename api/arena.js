@@ -28,6 +28,13 @@ async function saveFriendSnapshot(uid,b) {
   const d=b.fstats;if (!uid.startsWith('t') || !d || typeof d !== 'object' || Array.isArray(d)) return;
   const n=(v,max)=>Math.floor(num(v,0,max));
   const snap={hero:HEROES.some(h=>h[0]===b.hero)?b.hero:'fox',level:Math.max(1,n(b.lvl,200)),heroLevel:Math.max(1,n(d.heroLevel,30)),puzzles:n(d.puzzles,10000000),stars:n(d.stars,600),achievements:n(d.achievements,100),teamwins:n(d.teamwins,10000000),ts:now()};
+  if(d.more && typeof d.more==='object' && !Array.isArray(d.more)) {
+    const z=d.more, allowed=['pieces','perfect','streak','coinsEarned','minutes','games','arenaGames'];
+    snap.more={}; for(const k of allowed)if(z[k]!==undefined)snap.more[k]=n(z[k],100000000);
+    if(Array.isArray(z.heroes))snap.more.heroes=z.heroes.filter(x=>HEROES.some(h=>h[0]===x)).slice(0,7);
+    if(z.skills && typeof z.skills==='object'){snap.more.skills={};for(const k of ['magnet','hint','time','luck','corner','atk','def','en'])snap.more.skills[k]=n(z.skills[k],5);}
+    if(z.ach && typeof z.ach==='object'){snap.more.ach={};for(const k of ['pieces','wins','stars','moreStars','perfect','speed','big','streak','daily','coins','heroes','upg','own','anim','friends','teamwins','cases','rareCases','duels','rating'])if(z.ach[k]!==undefined)snap.more.ach[k]=n(z.ach[k],5);}
+  }
   await jset('friendstats:'+uid,snap);
 }
 const pub = u => ({ a: u.a, h: u.h, l: u.lv || 1, rt: u.rt, hp: u.hp || 100 });
@@ -117,9 +124,9 @@ const OPS = {
     const id=String(b.id||''); if(!/^t[0-9]+$/.test(id) || id===uid) return {err:'friend'};
     const checks=await pipe([['SISMEMBER','friends:'+uid,id],['SISMEMBER','friends:'+id,uid]]);
     if(!checks[0] || !checks[1])return {err:'friend'};
-    const [u,stats,ids,avatars]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id]),avatarMap(uid,[id])]);
+    const [u,stats,ids,avatars,publicId]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id]),avatarMap(uid,[id]),cmd('GET','show:pub:'+id)]);
     const identity=ids[id]||{};
-    return {profile:{avatar:avatars[id]||null,name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,updated:stats?.ts||null}};
+    return {profile:{avatar:avatars[id]||null,name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,details:stats?.more||null,publicId:publicId||null,updated:stats?.ts||null}};
   },
   async friendSnapshot(uid,b) {
     if (!uid.startsWith('t')) return {err:'telegram'};
