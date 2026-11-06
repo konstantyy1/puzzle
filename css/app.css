@@ -1,6 +1,6 @@
 :root{
-  --a1:#7c3aed;--a2:#2563eb;--a3:#06b6d4;
-  --bg:#0a0a14;--bg2:#14142b;--bg3:#1c1c3a;
+  --a1:#167fbc;--a2:#4e66e8;--a3:#46d7d0;
+  --bg:#0a1424;--bg2:#112239;--bg3:#1a304a;
   --card:rgba(255,255,255,.06);--glass:rgba(255,255,255,.09);--brd:rgba(255,255,255,.12);
   --mut:rgba(255,255,255,.58);--ok:#4ade80;--bad:#f87171;--gold:#fbbf24;
   --st:max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px));
@@ -18,14 +18,10 @@ body.t-rose  {--a1:#f43f5e;--a2:#ec4899;--a3:#a855f7}
 body.t-gold  {--a1:#eab308;--a2:#d97706;--a3:#fde047}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:#fff;
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:radial-gradient(ellipse at 18% -12%,rgba(24,102,137,.38),transparent 48%),radial-gradient(ellipse at 95% 86%,rgba(64,74,150,.28),transparent 50%),var(--bg);color:#fff;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;font-size:14px;line-height:1.35}
 button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation}
-.bgfx{position:fixed;top:0;right:0;bottom:0;left:0;overflow:hidden;pointer-events:none;z-index:0}
-.bgfx i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.28}
-.bgfx i:nth-child(1){width:60vmax;height:60vmax;left:-20vmax;top:-20vmax;background:var(--a1)}
-.bgfx i:nth-child(2){width:50vmax;height:50vmax;right:-18vmax;bottom:-15vmax;background:var(--a2)}
-.bgfx i:nth-child(3){width:30vmax;height:30vmax;right:10vmax;top:30vh;background:var(--a3);opacity:.14}
+.bgfx{display:none} /* Background is a continuous viewport gradient, without clipped blur layers. */
 .screen{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1;display:none;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   padding:calc(var(--st) + var(--ct) + 12px) calc(var(--sr) + 14px) calc(var(--sb) + var(--tabh) + 20px) calc(var(--sl) + 14px)}
 .screen.on{display:block;animation:fadeIn .22s ease}
@@ -323,3 +319,14 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .gtop .skb small{position:static;font-size:11px;border:none;background:none;padding:0}
 .gtop .skb.rdy{animation:none;box-shadow:0 0 0 2px rgba(251,191,36,.35),0 0 18px rgba(251,191,36,.7)}
 .banner{left:0;right:0;margin:0 auto;width:max-content;max-width:92%;transform:none;white-space:normal;text-align:center;line-height:1.25}
+
+/* Foto Puzzle identity and social shortcuts */
+.brand{display:flex;align-items:center;gap:10px;margin:2px 0 20px;padding:0 2px}
+.brand img{width:38px;height:38px;border-radius:11px;display:block}
+.brand div{display:flex;flex-direction:column;gap:1px}.brand b{font-size:15px;letter-spacing:.02em}.brand div span{font-size:11px;color:var(--mut)}
+.brand-tag{margin-left:auto;color:#8cccd5;font-size:10px;font-weight:800;letter-spacing:.11em}
+.topbar{padding:12px;background:rgba(15,34,54,.75);border:1px solid rgba(165,222,231,.16);border-radius:18px}
+.av{box-shadow:0 0 0 2px rgba(75,214,213,.28)}
+.friend-link{width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;text-align:left;padding:0 15px;margin:0 0 12px;border:1px solid rgba(101,214,213,.25);background:rgba(55,174,183,.10);border-radius:14px;font-size:14px;font-weight:800}
+button:focus-visible{outline:3px solid #a7f4f1;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
