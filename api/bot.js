@@ -41,11 +41,11 @@ async function onMsg(msg, app) {
       [{ text: '🔥 5×5', web_app: { url: link(5) } }, { text: '💀 6×6', web_app: { url: link(6) } }]]);
   }
   const t = (msg.text || '').trim();
-  const inv = t.match(/^\/start(?:@\w+)?\s+([fd])_([A-Za-z0-9]{24})$/);
+  const inv = t.match(/^\/start(?:@\w+)?\s+([fdt])_([A-Za-z0-9]{24})$/);
   if (inv) {
-    const kind = inv[1] === 'f' ? 'friend' : 'duel';
-    const label = kind === 'friend' ? '🤝 Прийняти запрошення в друзі' : '⚔️ Прийняти виклик на дуель';
-    return reply('🧩 ' + (kind === 'friend' ? 'Тебе запрошують у друзі!' : 'Тебе викликали на дуель!') + '\nВідкрий гру та підтверди:', [[{ text: label, web_app: { url: app + '/?' + kind + '=' + inv[2] } }]]);
+    const kind = inv[1] === 'f' ? 'friend' : inv[1] === 'd' ? 'duel' : 'team';
+    const label = kind === 'friend' ? '🤝 Прийняти запрошення в друзі' : kind === 'duel' ? '⚔️ Прийняти виклик на дуель' : '🤝 Приєднатися до бою 2×2';
+    return reply('🧩 ' + (kind === 'friend' ? 'Тебе запрошують у друзі!' : kind === 'duel' ? 'Тебе викликали на дуель!' : 'Тебе запрошують на командний бій!') + '\nВідкрий гру та підтверди:', [[{ text: label, web_app: { url: app + '/?' + kind + '=' + inv[2] } }]]);
   }
   if (/^\/help/.test(t)) return reply(HELP, [play]);
   if (/^\/(start|play)/.test(t)) return reply(WELCOME, [play]);
