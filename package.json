@@ -1,0 +1,8 @@
+{
+  "name": "fotopuzzle",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Фото Пазл — Telegram Mini App: пазли з фото, стікерів і GIF, рівні, онлайн-бої",
+  "engines": { "node": ">=18" }
+}
