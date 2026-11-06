@@ -2,6 +2,7 @@
 import { cmd, pipe, jget, jset, parse, hasKV } from './_lib/kv.js';
 import { checkInit } from './_lib/tg.js';
 import { alias, rid, rnd, readJson } from './_lib/util.js';
+import { refreshFriendIdentity, friendIdentities, friendLabel } from './_lib/friend-identity.js';
 
 const PIDS = [1069, 896, 525, 287, 1015, 701, 28, 976, 360, 429, 503, 639, 859, 376, 857, 164, 133, 437, 979, 799, 951, 165, 881, 580, 585, 34, 955, 402, 464, 21, 855];
 const HEROES = [['fox', 1], ['owl', 3], ['bear', 5], ['cat', 8], ['robot', 12], ['dragon', 18], ['uni', 25]];
@@ -9,8 +10,7 @@ const SKS = ['shuffle', 'fog', 'shield', 'claws', 'freeze', 'fire', 'rainbow'];
 const FTIME = 180, now = () => Date.now();
 const num = (v, a, b) => Math.max(a, Math.min(b, Number(v) || 0));
 
-function who(b) {
-  const u = checkInit(b.init);
+function who(b, u) {
   if (u && u.id) return 't' + u.id;
   const g = String(b.gid || '').replace(/[^a-z0-9]/gi, '').slice(0, 16);
   return g.length >= 6 ? 'g' + g : null;
@@ -25,6 +25,7 @@ function applyProf(u, b) {
 }
 const pub = u => ({ a: u.a, h: u.h, l: u.lv || 1, rt: u.rt, hp: u.hp || 100 });
 const view = (m, side) => { const o = side === 'a' ? m.b : m.a; return { mid: m.id, side, seed: m.seed, g: m.g, pid: m.pid, ranked: m.rk, bot: m.bot, t0: m.t0, now: now(), opp: { a: o.a, h: o.h, l: o.l, rt: o.rt, hp: o.hp } }; };
+const friendView = async (m, side, uid) => { const o=side==='a'?m.b:m.a, out=view(m,side), ids=await friendIdentities(uid,[o.uid]); out.opp.a=friendLabel(ids[o.uid],o.a); return out; };
 const newMatch = (rk, bot, a, b, delay) => ({ id: rid(10), rk, bot, seed: rnd(2147483647), g: rk && (a.rt + b.rt) / 2 >= 1300 ? 5 : 4, pid: PIDS[rnd(PIDS.length)], t0: now() + delay, a, b });
 
 async function tryMatch(uid, tk, waited) {
@@ -86,7 +87,8 @@ const OPS = {
     if (!uid.startsWith('t')) return { err: 'telegram' };
     const ids = (await cmd('SMEMBERS', 'friends:' + uid)).slice(0, 100);
     const rows = ids.length ? await cmd('MGET', ...ids.map(id => 'u:' + id)) : [];
-    return { list: ids.map((id, i) => { const u = parse(rows[i]) || {}; return { id, a: u.a || alias(id), h: u.h || 'fox', l: u.lv || 1 }; }) };
+    const identities = await friendIdentities(uid,ids);
+    return { list: ids.map((id, i) => { const u = parse(rows[i]) || {}, p = identities[id] || {}; return { id, a: u.a || alias(id), name:p.name || '', username:p.username || '', h: u.h || 'fox', l: u.lv || 1 }; }) };
   },
   async friendInvite(uid) {
     if (!uid.startsWith('t')) return { err: 'telegram' };
@@ -100,7 +102,7 @@ const OPS = {
     if (v.uid === uid) return { err: 'self' };
     const taken = parse(await cmd('GETDEL', key)); if (!taken || taken.uid !== v.uid) return { err: 'expired' };
     await pipe([['SADD', 'friends:' + uid, v.uid], ['SADD', 'friends:' + v.uid, uid]]);
-    return { ok: 1, a: (await user(v.uid)).a };
+    const ids = await friendIdentities(uid,[v.uid]); return { ok: 1, a: friendLabel(ids[v.uid], (await user(v.uid)).a) };
   },
   async friendRemove(uid, b) {
     if (!uid.startsWith('t')) return { err: 'telegram' };
@@ -126,13 +128,13 @@ const OPS = {
     const u = await user(uid); applyProf(u, b); await jset('u:' + uid, u);
     const m = newMatch(0, 0, Object.assign({ uid: invite.uid }, invite.p), Object.assign({ uid }, pub(u)), 12000);
     await pipe([['SET', 'm:' + m.id, JSON.stringify(m), 'EX', 900], ['SET', 'diresult:' + code, JSON.stringify({ mid: m.id, side: 'a', uid: invite.uid }), 'EX', 90]]);
-    return view(m, 'b');
+    return friendView(m, 'b', uid);
   },
   async duelPoll(uid, b) {
     if (!uid.startsWith('t')) return { err: 'telegram' };
     const code = String(b.code || ''); if (!/^[A-Za-z0-9]{24}$/.test(code)) return { err: 'invite' };
     const done = await jget('diresult:' + code);
-    if (done && done.uid === uid) { const m = await jget('m:' + done.mid); return m ? view(m, 'a') : { err: 'expired' }; }
+    if (done && done.uid === uid) { const m = await jget('m:' + done.mid); return m ? friendView(m, 'a', uid) : { err: 'expired' }; }
     const inv = await jget('di:' + code); if (!inv || inv.uid !== uid) return { err: 'expired' };
     return { wait: true };
   },
@@ -208,8 +210,8 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(200).json({ ok: 1, kv: hasKV });
   if (!hasKV && process.env.VERCEL) return res.status(200).json({ err: 'nokv' }); // no Redis on Vercel -> client plays offline vs bot
-  const b = await readJson(req), uid = who(b);
+  const b = await readJson(req), tgu=checkInit(b.init), uid = who(b, tgu);
   if (!uid) return res.status(200).json({ err: 'auth' });
   const f = OPS[b.op]; if (!f) return res.status(200).json({ err: 'op' });
-  try { res.status(200).json((await f(uid, b)) || {}); } catch (e) { console.error('arena', b.op, e); res.status(200).json({ err: 'server' }); }
+  try { if (tgu && ['sync','friendInvite','friendAccept','friends','duelCreate','duelJoin'].includes(b.op)) await refreshFriendIdentity(uid,tgu); res.status(200).json((await f(uid, b)) || {}); } catch (e) { console.error('arena', b.op, e); res.status(200).json({ err: 'server' }); }
 }

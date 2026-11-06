@@ -2,6 +2,7 @@
 import { cmd, pipe, jget, jset, parse, hasKV } from './_lib/kv.js';
 import { checkInit } from './_lib/tg.js';
 import { alias, rid, rnd, readJson } from './_lib/util.js';
+import { refreshFriendIdentity, friendIdentities, friendLabel } from './_lib/friend-identity.js';
 const SLOT = ['a0','a1','b0','b1'], TTL = 900, NOW = () => Date.now();
 const HERO = ['fox','owl','bear','cat','robot','dragon','uni'];
 const SKILLS = ['shuffle','fog','shield','claws','freeze','fire','rainbow'];
@@ -61,10 +62,12 @@ const ops={
  async lobby(uid,b){
   const c=String(b.code||'');if(!valid(c))return {err:'room'};
   const r=await jget(roomkey(c));if(!r)return {err:'expired'};const ps=await participants(c),slot=mySlot(ps,uid);if(!slot)return {err:'member'};
+  const names=await friendIdentities(uid,ps.filter(Boolean).map(p=>p.uid));
+  const shown=ps.map(p=>p?{...p,a:friendLabel(names[p.uid],p.a)}:null);
   if(ps.every(Boolean)){
-   const sk=roomkey(c)+':start';await cmd('SET',sk,String(NOW()+12000),'NX','EX',TTL);const t=await cmd('GET',sk);return {match:match(c,r,ps,slot,t)};
+   const sk=roomkey(c)+':start';await cmd('SET',sk,String(NOW()+12000),'NX','EX',TTL);const t=await cmd('GET',sk);return {match:match(c,r,shown,slot,t)};
   }
-  return {wait:true,slot,players:ps.map(p=>p?{a:p.a,h:p.h,l:p.l}:null)};
+  return {wait:true,slot,players:shown.map(p=>p?{a:p.a,h:p.h,l:p.l}:null)};
  },
  async act(uid,b){
   const c=String(b.mid||'');if(!valid(c))return {err:'match'};const r=await jget(roomkey(c));if(!r)return {err:'expired'};
@@ -91,5 +94,5 @@ export default async function handler(req,res){
  const b=await readJson(req),u=checkInit(b.init),uid=u&&Number.isSafeInteger(u.id)&&u.id>0?'t'+u.id:null;
  if(!uid)return res.status(200).json({err:'telegram'});
  if(!Object.hasOwn(ops,b.op))return res.status(200).json({err:'op'});
- try{return res.status(200).json(await ops[b.op](uid,b));}catch(e){console.error('team',b.op,e);return res.status(200).json({err:'server'});}
+ try{if(['create','join'].includes(b.op))await refreshFriendIdentity(uid,u);return res.status(200).json(await ops[b.op](uid,b));}catch(e){console.error('team',b.op,e);return res.status(200).json({err:'server'});}
 }
