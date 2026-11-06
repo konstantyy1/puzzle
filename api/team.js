@@ -3,6 +3,7 @@ import { cmd, pipe, jget, jset, parse, hasKV } from './_lib/kv.js';
 import { checkInit } from './_lib/tg.js';
 import { alias, rid, rnd, readJson } from './_lib/util.js';
 import { refreshFriendIdentity, friendIdentities, friendLabel } from './_lib/friend-identity.js';
+import {avatarMap} from './_lib/avatars.js';
 const SLOT = ['a0','a1','b0','b1'], TTL = 900, NOW = () => Date.now();
 const HERO = ['fox','owl','bear','cat','robot','dragon','uni'];
 const SKILLS = ['shuffle','fog','shield','claws','freeze','fire','rainbow'];
@@ -23,10 +24,10 @@ const clampState = (s,old) => {
  if(s.f&&out.p>=16&&!out.fT)out.fT=NOW(); return out;
 };
 const publicState = s => s ? {p:s.p||0,d:s.d||0,h:s.h||0,e:s.e||0,k:s.k||[],f:s.fT?1:0,x:s.x||0} : {p:0,d:0,h:0,e:0,k:[],f:0,x:0};
-const cleanProf = p => ({a:p.a,h:p.h,l:p.l,hp:p.hp,rt:p.rt});
+const cleanProf = p => ({a:p.a,h:p.h,l:p.l,hp:p.hp,rt:p.rt,avatar:p.avatar||null});
 function match(c,room,ps,slot,t0) {
  const me=SLOT.indexOf(slot), side=slot[0], mate=me ^ 1, foes=side==='a'?[2,3]:[0,1];
- return {team:true,mid:c,side:slot,seed:room.seed,g:4,pid:room.pid,ranked:0,bot:0,t0:+t0,now:NOW(),ally:cleanProf(ps[mate]),opponents:foes.map(i=>cleanProf(ps[i])),opp:{a:ps[foes[0]].a+' + '+ps[foes[1]].a,h:ps[foes[0]].h,l:Math.max(ps[foes[0]].l,ps[foes[1]].l),hp:ps[foes[0]].hp+ps[foes[1]].hp}};
+ return {team:true,mid:c,side:slot,seed:room.seed,g:4,pid:room.pid,ranked:0,bot:0,t0:+t0,now:NOW(),ally:cleanProf(ps[mate]),opponents:foes.map(i=>cleanProf(ps[i])),opp:{a:ps[foes[0]].a+' + '+ps[foes[1]].a,h:ps[foes[0]].h,avatar:ps[foes[0]].avatar||null,l:Math.max(ps[foes[0]].l,ps[foes[1]].l),hp:ps[foes[0]].hp+ps[foes[1]].hp}};
 }
 async function decide(c,room,ps,states,t0) {
  const [A,B,C,D]=states.map(s=>s||{}), t=NOW();
@@ -65,7 +66,7 @@ const ops={
   const names=await friendIdentities(uid,ps.filter(Boolean).map(p=>p.uid));
   const shown=ps.map(p=>p?{...p,a:friendLabel(names[p.uid],p.a)}:null);
   if(ps.every(Boolean)){
-   const sk=roomkey(c)+':start';await cmd('SET',sk,String(NOW()+12000),'NX','EX',TTL);const t=await cmd('GET',sk);return {match:match(c,r,shown,slot,t)};
+   const sk=roomkey(c)+':start';await cmd('SET',sk,String(NOW()+12000),'NX','EX',TTL);const t=await cmd('GET',sk);const av=await avatarMap(uid,ps.map(p=>p.uid));shown.forEach(p=>p.avatar=av[p.uid]||null);return {match:match(c,r,shown,slot,t)};
   }
   return {wait:true,slot,players:shown.map(p=>p?{a:p.a,h:p.h,l:p.l}:null)};
  },

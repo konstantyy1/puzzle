@@ -3,6 +3,7 @@ import { cmd, pipe, jget, jset, parse, hasKV } from './_lib/kv.js';
 import { checkInit } from './_lib/tg.js';
 import { alias, rid, rnd, readJson } from './_lib/util.js';
 import { refreshFriendIdentity, friendIdentities, friendLabel } from './_lib/friend-identity.js';
+import {validAvatar, avatarMap} from './_lib/avatars.js';
 
 const PIDS = [1069, 896, 525, 287, 1015, 701, 28, 976, 360, 429, 503, 639, 859, 376, 857, 164, 133, 437, 979, 799, 951, 165, 881, 580, 585, 34, 955, 402, 464, 21, 855];
 const HEROES = [['fox', 1], ['owl', 3], ['bear', 5], ['cat', 8], ['robot', 12], ['dragon', 18], ['uni', 25]];
@@ -31,7 +32,7 @@ async function saveFriendSnapshot(uid,b) {
 }
 const pub = u => ({ a: u.a, h: u.h, l: u.lv || 1, rt: u.rt, hp: u.hp || 100 });
 const view = (m, side) => { const o = side === 'a' ? m.b : m.a; return { mid: m.id, side, seed: m.seed, g: m.g, pid: m.pid, ranked: m.rk, bot: m.bot, t0: m.t0, now: now(), opp: { a: o.a, h: o.h, l: o.l, rt: o.rt, hp: o.hp } }; };
-const friendView = async (m, side, uid) => { const o=side==='a'?m.b:m.a, out=view(m,side), ids=await friendIdentities(uid,[o.uid]); out.opp.a=friendLabel(ids[o.uid],o.a); return out; };
+const friendView = async (m, side, uid) => { const o=side==='a'?m.b:m.a, out=view(m,side), [ids,avatars]=await Promise.all([friendIdentities(uid,[o.uid]),avatarMap(uid,[o.uid])]); out.opp.a=friendLabel(ids[o.uid],o.a); out.opp.avatar=avatars[o.uid]||null; return out; };
 const newMatch = (rk, bot, a, b, delay) => ({ id: rid(10), rk, bot, seed: rnd(2147483647), g: rk && (a.rt + b.rt) / 2 >= 1300 ? 5 : 4, pid: PIDS[rnd(PIDS.length)], t0: now() + delay, a, b });
 
 async function tryMatch(uid, tk, waited) {
@@ -96,14 +97,29 @@ const OPS = {
     const identities = await friendIdentities(uid,ids);
     return { list: ids.map((id, i) => { const u = parse(rows[i]) || {}, p = identities[id] || {}; return { id, a: u.a || alias(id), name:p.name || '', username:p.username || '', h: u.h || 'fox', l: u.lv || 1 }; }) };
   },
+  async avatarGet(uid,b) {
+    if(!uid.startsWith('t'))return {err:'telegram'};
+    const ids=Array.isArray(b.ids)?b.ids:[uid]; if(ids.length>20)return {err:'limit'};
+    return {avatars:await avatarMap(uid,ids)};
+  },
+  async avatarSet(uid,b) {
+    if(!uid.startsWith('t'))return {err:'telegram'};
+    if(!validAvatar(b.image))return {err:'image'};
+    if(!await cmd('SET','avatar-rate:'+uid,'1','NX','EX',3))return {err:'busy'};
+    await cmd('SET','avatar:'+uid,b.image);return {ok:1};
+  },
+  async avatarDelete(uid) {
+    if(!uid.startsWith('t'))return {err:'telegram'};
+    await cmd('DEL','avatar:'+uid,'avatar-rate:'+uid);return {ok:1};
+  },
   async friendProfile(uid,b) {
     if (!uid.startsWith('t')) return {err:'telegram'};
     const id=String(b.id||''); if(!/^t[0-9]+$/.test(id) || id===uid) return {err:'friend'};
     const checks=await pipe([['SISMEMBER','friends:'+uid,id],['SISMEMBER','friends:'+id,uid]]);
     if(!checks[0] || !checks[1])return {err:'friend'};
-    const [u,stats,ids]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id])]);
+    const [u,stats,ids,avatars]=await Promise.all([user(id),jget('friendstats:'+id),friendIdentities(uid,[id]),avatarMap(uid,[id])]);
     const identity=ids[id]||{};
-    return {profile:{name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,updated:stats?.ts||null}};
+    return {profile:{avatar:avatars[id]||null,name:identity.name||'',username:identity.username||'',alias:u.a||alias(id),hero:stats?.hero||u.h||'fox',level:stats?.level||u.lv||1,rating:u.rt||1000,arenaWins:u.w||0,heroLevel:stats?.heroLevel??null,puzzles:stats?.puzzles??null,stars:stats?.stars??null,achievements:stats?.achievements??null,teamwins:stats?.teamwins??null,updated:stats?.ts||null}};
   },
   async friendSnapshot(uid,b) {
     if (!uid.startsWith('t')) return {err:'telegram'};
