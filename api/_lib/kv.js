@@ -26,6 +26,7 @@ function memCmd(a) {
     case 'ZREVRANGE': { const r = zsorted(a[1]).slice(+a[2], +a[3] + 1); return String(a[4] || '').toUpperCase() === 'WITHSCORES' ? r.flatMap(([m, s]) => [m, String(s)]) : r.map(x => x[0]); }
     case 'ZREVRANK': { const i = zsorted(a[1]).findIndex(x => x[0] === String(a[2])); return i < 0 ? null : i; }
     case 'ZSCORE': { const z = mem.z.get(a[1]); const v = z && z.get(String(a[2])); return v === undefined || v === null ? null : String(v); }
+    case 'ZREM': { const z=mem.z.get(a[1]) || new Map(); let n=0; for(const v of a.slice(2)) if(z.delete(String(v))) n++; return n; }
     case 'ZCARD': return (mem.z.get(a[1]) || new Map()).size;
     default: throw new Error('mem: unsupported ' + c);
   }

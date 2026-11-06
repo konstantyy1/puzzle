@@ -27,7 +27,7 @@ function applyProf(u, b) {
 async function saveFriendSnapshot(uid,b) {
   const d=b.fstats;if (!uid.startsWith('t') || !d || typeof d !== 'object' || Array.isArray(d)) return;
   const n=(v,max)=>Math.floor(num(v,0,max));
-  const snap={hero:HEROES.some(h=>h[0]===b.hero)?b.hero:'fox',level:Math.max(1,n(b.lvl,200)),heroLevel:Math.max(1,n(d.heroLevel,30)),puzzles:n(d.puzzles,10000000),stars:n(d.stars,150),achievements:n(d.achievements,85),teamwins:n(d.teamwins,10000000),ts:now()};
+  const snap={hero:HEROES.some(h=>h[0]===b.hero)?b.hero:'fox',level:Math.max(1,n(b.lvl,200)),heroLevel:Math.max(1,n(d.heroLevel,30)),puzzles:n(d.puzzles,10000000),stars:n(d.stars,600),achievements:n(d.achievements,100),teamwins:n(d.teamwins,10000000),ts:now()};
   await jset('friendstats:'+uid,snap);
 }
 const pub = u => ({ a: u.a, h: u.h, l: u.lv || 1, rt: u.rt, hp: u.hp || 100 });
