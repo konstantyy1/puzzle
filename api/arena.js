@@ -1,4 +1,4 @@
-/* Arena API: matchmaking, PvP state sync, ELO rating, anonymous leaderboards */
+/* Arena API: matchmaking, PvP state sync, ELO rating, monthly seasons, anonymous leaderboards */
 import { cmd, pipe, jget, jset, parse, hasKV } from './_lib/kv.js';
 import { checkInit } from './_lib/tg.js';
 import { alias, rid, rnd, readJson } from './_lib/util.js';
@@ -10,6 +10,16 @@ const HEROES = [['fox', 1], ['owl', 3], ['bear', 5], ['cat', 8], ['robot', 12], 
 const SKS = ['shuffle', 'fog', 'shield', 'claws', 'freeze', 'fire', 'rainbow'];
 const FTIME = 180, now = () => Date.now();
 const num = (v, a, b) => Math.max(a, Math.min(b, Number(v) || 0));
+/* Monthly seasons (UTC): season rating starts at 1000 every month, the main rating is untouched. */
+const season = () => new Date().toISOString().slice(0, 7);
+const prevSeason = () => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); };
+const seasonEnds = () => { const d = new Date(); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1); };
+const SEASON_TTL = 86400 * 120;
+function seasonApply(u, uid, d, ops) {
+  const s = season(); if (u.ss !== s) { u.ss = s; u.sr = 1000; }
+  u.sr = Math.max(100, (u.sr || 1000) + (d || 0));
+  ops.push(['ZADD', 'lb:s:' + s, u.sr, uid], ['EXPIRE', 'lb:s:' + s, SEASON_TTL]);
+}
 
 function who(b, u) {
   if (u && u.id) return 't' + u.id;
@@ -90,7 +100,8 @@ async function decide(m, A, B) {
   }
   if (w === 'd') { ua.d = (ua.d || 0) + 1; ub.d = (ub.d || 0) + 1; } else if (w === 'a') { ua.w++; ub.l++; } else { ub.w++; ua.l++; }
   res.ra = ua.rt; res.rb = ub.rt;
-  const ops = [['SET', 'u:' + m.a.uid, JSON.stringify(ua)], ['SET', 'u:' + m.b.uid, JSON.stringify(ub)], ['SET', rk, JSON.stringify(res), 'EX', 900]];
+  const sops = []; if (m.rk) { seasonApply(ua, m.a.uid, res.da, sops); seasonApply(ub, m.b.uid, res.db, sops); }
+  const ops = [['SET', 'u:' + m.a.uid, JSON.stringify(ua)], ['SET', 'u:' + m.b.uid, JSON.stringify(ub)], ['SET', rk, JSON.stringify(res), 'EX', 900], ...sops];
   if (m.rk) ops.push(['ZADD', 'lb:rt', ua.rt, m.a.uid], ['ZADD', 'lb:rt', ub.rt, m.b.uid]);
   await pipe(ops);
   return res;
@@ -193,14 +204,22 @@ const OPS = {
     return { rt: u.rt, w: u.w, l: u.l, alias: u.a, kv: hasKV };
   },
   async top(uid, b) {
-    const bd = b.board === 'lvl' ? 'lvl' : 'rt', key = 'lb:' + bd;
-    const [raw, rank] = await pipe([['ZREVRANGE', key, 0, 29, 'WITHSCORES'], ['ZREVRANK', key, uid]]);
+    const bd = b.board === 'lvl' ? 'lvl' : b.board === 'ss' ? 'ss' : 'rt', key = bd === 'ss' ? 'lb:s:' + season() : 'lb:' + bd;
+    const [raw, rank, mine] = await pipe([['ZREVRANGE', key, 0, 29, 'WITHSCORES'], ['ZREVRANK', key, uid], ['ZSCORE', key, uid]]);
     const ids = []; for (let i = 0; i < (raw || []).length; i += 2) ids.push([raw[i], +raw[i + 1]]);
     const us = ids.length ? await cmd('MGET', ...ids.map(x => 'u:' + x[0])) : [];
-    const list = ids.map(([id, sc], i) => { const u = parse(us[i]) || {}; return { a: u.a || '???', h: u.h || 'fox', l: u.lv || 1, s: bd === 'rt' ? Math.round(sc) : u.lv || 1, me: id === uid ? 1 : 0 }; });
+    const list = ids.map(([id, sc], i) => { const u = parse(us[i]) || {}; return { a: u.a || '???', h: u.h || 'fox', l: u.lv || 1, s: bd === 'lvl' ? u.lv || 1 : Math.round(sc), me: id === uid ? 1 : 0 }; });
     let my = null;
-    if (rank !== null && rank !== undefined) { const u = await user(uid); my = { pos: +rank + 1, a: u.a, h: u.h, l: u.lv, s: bd === 'rt' ? u.rt : u.lv }; }
-    return { list, my };
+    if (rank !== null && rank !== undefined) { const u = await user(uid); my = { pos: +rank + 1, a: u.a, h: u.h, l: u.lv, s: bd === 'lvl' ? u.lv : bd === 'ss' ? Math.round(+mine || 0) : u.rt }; }
+    return bd === 'ss' ? { list, my, season: { id: season(), ends: seasonEnds() } } : { list, my };
+  },
+  // Result of the previous season; `fresh` is true only the first time, so the reward is given once per account.
+  async seasonPrev(uid) {
+    const id = prevSeason(), key = 'lb:s:' + id;
+    const [rank, total] = await pipe([['ZREVRANK', key, uid], ['ZCARD', key]]);
+    const pos = rank === null || rank === undefined ? null : +rank + 1;
+    const fresh = pos ? !!(await cmd('SET', 'sclaim:' + id + ':' + uid, '1', 'NX', 'EX', SEASON_TTL)) : false;
+    return { id, pos, total: +total || 0, fresh, cur: season(), ends: seasonEnds() };
   },
   async find(uid, b) {
     const u = await user(uid); applyProf(u, b);
@@ -244,7 +263,8 @@ const OPS = {
     let drt = 0;
     if (m.rk) { const e = 1 / (1 + 10 ** ((m.b.rt - u.rt) / 400)), nr = Math.max(100, Math.round(u.rt + 16 * (sc - e))); drt = nr - u.rt; u.rt = nr; u.g = (u.g || 0) + 1; }
     if (sc === 1) u.w++; else if (sc === 0) u.l++; else u.d = (u.d || 0) + 1;
-    const ops = [['SET', 'u:' + uid, JSON.stringify(u)]]; if (m.rk) ops.push(['ZADD', 'lb:rt', u.rt, uid]);
+    const sops = []; if (m.rk) seasonApply(u, uid, drt, sops);
+    const ops = [['SET', 'u:' + uid, JSON.stringify(u)], ...sops]; if (m.rk) ops.push(['ZADD', 'lb:rt', u.rt, uid]);
     await pipe(ops);
     return { rt: u.rt, drt };
   },
