@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { tg } from './_lib/tg.js';
 import { hookSecret, appUrl, TOKEN } from './_lib/util.js';
 import { hasKV } from './_lib/kv.js';
+import { COMMANDS } from './_lib/cmds.js';
 
 export default async function handler(req, res) {
   const key = process.env.SETUP_KEY || '';
@@ -23,8 +24,8 @@ export default async function handler(req, res) {
       out.push([wh.ok ? '✅' : '❌', 'Webhook → ' + app + '/api/bot' + (wh.ok ? '' : ': ' + wh.description)]);
       const mb = await tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Грати', web_app: { url: app + '/' } } });
       out.push([mb.ok ? '✅' : '❌', 'Кнопка меню «Грати» → ' + app + '/' + (mb.ok ? '' : ': ' + mb.description)]);
-      const cm = await tg('setMyCommands', { commands: [{ command: 'start', description: 'Почати гру' }, { command: 'play', description: 'Відкрити пазли' }, { command: 'help', description: 'Як зробити пазл зі стікера чи GIF' }] });
-      out.push([cm.ok ? '✅' : '❌', 'Команди /start, /play, /help']);
+      const cm = await tg('setMyCommands', { commands: COMMANDS });
+      out.push([cm.ok ? '✅' : '❌', 'Команди /start, /play, /daily, /help, /stop']);
       await tg('setMyShortDescription', { short_description: 'Пазли з фото, стікерів і GIF · рівні · онлайн-бої' });
     }
   }

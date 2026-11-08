@@ -2,9 +2,10 @@
 import { tg } from './_lib/tg.js';
 import { hookSecret, sig, b64u, appUrl, readJson, rid } from './_lib/util.js';
 import { cmd, jget, jset, hasKV } from './_lib/kv.js';
+import { COMMANDS, COMMANDS_V } from './_lib/cmds.js';
 
 const MAX = 4.3 * 1024 * 1024; // Vercel response limit ~4.5 MB
-const WELCOME = '👋 Привіт! Це <b>Фото Пазл</b> 🧩\n\n🗺️ 200 рівнів кампанії з зірками\n⚔️ Арена: онлайн-бої та рейтинг\n🦊 Герої з суперударами і прокачкою\n📋 Щоденні завдання й нагороди\n\n' +
+const WELCOME = '👋 Привіт! Це <b>Фото Пазл</b> 🧩\n\n🗺️ 200 рівнів кампанії з зірками\n⚔️ Арена: онлайн-бої та рейтинг\n🦊 Герої з суперударами і прокачкою\n🧩 Пазл дня з рейтингом\n📋 Щоденні завдання й нагороди\n\n' +
   '🎞️ <b>Надішли мені стікер, GIF, фото або відео</b> — і я перетворю його на пазл! Анімовані стікери й GIF рухаються прямо в деталях.';
 const HELP = '🧩 <b>Як зробити пазл</b>\n\n1. Надішли сюди будь-який стікер, GIF, фото або коротке відео.\n2. Обери розмір під повідомленням: 3×3 … 6×6.\n3. Збирай! Пазл також з’явиться в грі в розділі «Свій пазл».';
 
@@ -51,11 +52,26 @@ async function onMsg(msg, app) {
     const label = kind === 'friend' ? '🤝 Прийняти запрошення в друзі' : kind === 'duel' ? '⚔️ Прийняти виклик на дуель' : '🤝 Приєднатися до бою 2×2';
     return reply('🧩 ' + (kind === 'friend' ? 'Тебе запрошують у друзі!' : kind === 'duel' ? 'Тебе викликали на дуель!' : 'Тебе запрошують на командний бій!') + '\nВідкрий гру та підтверди:', [[{ text: label, web_app: { url: app + '/?' + kind + '=' + inv[2] } }]]);
   }
+  if (/^\/stop(?:@\w+)?$/.test(t)) { await cmd('SREM', 'rem:on', 't' + msg.chat.id); return reply('🔕 Нагадування про Пазл дня вимкнено.\nУвімкнути знову можна в грі: 🏠 Головна → 🧩 Пазл дня.', [play]); }
+  if (/^\/(?:daily|start(?:@\w+)?\s+dz)(?:@\w+)?$/.test(t)) return reply('🧩 <b>Пазл дня</b> — одна картинка для всіх гравців. Збери її швидше за інших і потрап у рейтинг дня 🏆', [[{ text: '🧩 Грати в Пазл дня', web_app: { url: app + '/?dz=1' } }]]);
   if (/^\/help/.test(t)) return reply(HELP, [play]);
   if (/^\/(start|play)/.test(t)) return reply(WELCOME, [play]);
   if (t) return reply('Надішли мені <b>стікер</b>, <b>GIF</b>, <b>фото</b> або <b>відео</b> — і я зроблю з нього пазл 🧩', [play]);
 }
-async function onCallback(q) {
+// The bot command menu refreshes itself once after a release (no manual /api/setup needed).
+let cmdsOk = false;
+async function ensureCmds() {
+  if (cmdsOk) return; cmdsOk = true;
+  try { if ((await cmd('GET', 'bot:cmds')) === COMMANDS_V) return; const r = await tg('setMyCommands', { commands: COMMANDS }); if (r && r.ok) await cmd('SET', 'bot:cmds', COMMANDS_V); } catch (e) {}
+}
+async function onCallback(q, app) {
+  if (q.data === 'rem_off') {
+    const from = q.from && q.from.id, m0 = q.message;
+    if (Number.isSafeInteger(from)) await cmd('SREM', 'rem:on', 't' + from);
+    await tg('answerCallbackQuery', { callback_query_id: q.id, text: '🔕 Нагадування вимкнено. Увімкнути знову можна в грі → Пазл дня.' });
+    if (m0 && m0.chat && m0.message_id) await tg('editMessageReplyMarkup', { chat_id: m0.chat.id, message_id: m0.message_id, reply_markup: { inline_keyboard: [[{ text: '🧩 Грати', web_app: { url: app + '/?dz=1' } }]] } });
+    return;
+  }
   const m=/^pz_([A-Za-z0-9]{24})_([3-6])$/.exec(String(q.data||'')); if(!m)return;
   const from=q.from && q.from.id, chat=q.message && q.message.chat;
   if(!Number.isSafeInteger(from)||!chat||chat.type!=='private'||chat.id!==from){await tg('answerCallbackQuery',{callback_query_id:q.id,text:'Ця кнопка доступна тільки в особистому чаті з ботом.'});return;}
@@ -68,6 +84,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(200).send('ok');
   if (req.headers['x-telegram-bot-api-secret-token'] !== hookSecret()) return res.status(401).send('unauthorized');
   const u = await readJson(req);
-  try { if (u && u.message) await onMsg(u.message, appUrl(req)); else if (u && u.callback_query) await onCallback(u.callback_query); } catch (e) { console.error('bot', e); }
+  try { await ensureCmds(); if (u && u.message) await onMsg(u.message, appUrl(req)); else if (u && u.callback_query) await onCallback(u.callback_query, appUrl(req)); } catch (e) { console.error('bot', e); }
   res.status(200).json({ ok: true });
 }
