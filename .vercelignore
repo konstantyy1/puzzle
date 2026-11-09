@@ -9,3 +9,4 @@ production
 .gitattributes
 .gitignore
 .worktreeinclude
+tests

@@ -5,7 +5,7 @@ import { alias, rid, rnd, readJson } from './_lib/util.js';
 import { refreshFriendIdentity, friendIdentities, friendLabel } from './_lib/friend-identity.js';
 import {validAvatar, avatarMap} from './_lib/avatars.js';
 
-const PIDS = [1069, 896, 525, 287, 1015, 701, 28, 976, 360, 429, 503, 639, 859, 376, 857, 164, 133, 437, 979, 799, 951, 165, 881, 580, 585, 34, 955, 402, 464, 21, 855];
+const PIDS = [1069, 896, 525, 287, 503, 639, 859, 376, 900, 871, 851, 867, 908, 327, 54, 791, 167, 19, 695, 63, 951, 165, 881, 580, 585, 34, 955, 402, 464, 21, 855]; // same pictures as DATA.GALLERY in the game (tests/unit/data.test.mjs keeps them in sync)
 const HEROES = [['fox', 1], ['owl', 3], ['bear', 5], ['cat', 8], ['robot', 12], ['dragon', 18], ['uni', 25]];
 const SKS = ['shuffle', 'fog', 'shield', 'claws', 'freeze', 'fire', 'rainbow'];
 const FTIME = 180, now = () => Date.now();
