@@ -1,0 +1,11 @@
+# Claude Code Game Studios — студія розробки. Гравцям ці файли не потрібні,
+# тому вони не потрапляють на сайт гри.
+.claude
+CLAUDE.md
+project.yaml
+docs
+design
+production
+.gitattributes
+.gitignore
+.worktreeinclude

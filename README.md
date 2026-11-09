@@ -73,5 +73,12 @@
 
 > Без Redis гра працює, але Арена переходить в офлайн-режим (бої з ботом без рейтингу).
 
+## 🎬 Студія розробки
+У репозиторій підключено **Claude Code Game Studios** ([Donchitos/Claude-Code-Game-Studios](https://github.com/Donchitos/Claude-Code-Game-Studios), версія 1.2.0, коміт `05ad7c8`, ліцензія MIT — `.claude/LICENSE`): 49 ролей (директори, дизайнери, програмісти, художник, QA, live-ops…) і 74 сценарії роботи.
+- Файли студії: `.claude/`, `CLAUDE.md`, `project.yaml`, `docs/`, `design/`, `production/`. Гравцям вони не потрібні — `.vercelignore` не пускає їх на сайт.
+- Налаштування: стандартний режим (`modes.rigor: standard`); про великі рішення студія питає власника (`modes.automation: guided`).
+- Опис гри для студії — `design/gdd/game-concept.md`; що студія допише далі — `docs/adoption-plan-2026-11-09.md`.
+- Рушія немає (чистий веб), тому стек описано в `CLAUDE.md` і `.claude/docs/technical-preferences.md`.
+
 ## Свідомо не зроблено
 - **Публічна вітрина пазлів** прибрана: без платної модерації чужі фото публікувати небезпечно.

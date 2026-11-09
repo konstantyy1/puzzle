@@ -1,0 +1,23 @@
+# === Claude Code Game Studios: local files, never committed ===
+.claude/settings.local.json
+CLAUDE.local.md
+project.local.yaml
+production/session-logs/
+# Ephemeral per-session checkpoint (see .claude/docs/directory-structure.md)
+production/session-state/
+.scratch/
+.claude/agent-memory/
+.claude/worktrees/
+
+# === Secrets ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# === Local tools ===
+node_modules/
+.vercel/
+.DS_Store
+Thumbs.db
