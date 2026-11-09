@@ -1,0 +1,196 @@
+{
+ "base": "http://127.0.0.1:8766/",
+ "sizes": [
+  {
+   "size": "320x568",
+   "errors": [],
+   "warnings": [],
+   "net": 0,
+   "overflow": {},
+   "smallTaps": {},
+   "screens": [
+    "home",
+    "levels",
+    "daily",
+    "hero",
+    "profile",
+    "free",
+    "arena",
+    "friends",
+    "friendpage",
+    "cases"
+   ],
+   "xss": 0,
+   "heapMB": 3,
+   "longTasks": {
+    "count": 1,
+    "maxMs": 198
+   },
+   "apiCalls": [
+    "arena:avatarGet",
+    "arena:sync",
+    "queue:poll",
+    "arena:top",
+    "arena:seasonPrev",
+    "arena:friends"
+   ],
+   "blocked": []
+  },
+  {
+   "size": "360x740",
+   "errors": [],
+   "warnings": [],
+   "net": 0,
+   "overflow": {},
+   "smallTaps": {},
+   "load": {
+    "files": 30,
+    "kb": 250,
+    "loadMs": 239
+   },
+   "screens": [
+    "home",
+    "levels",
+    "daily",
+    "hero",
+    "profile",
+    "free",
+    "arena",
+    "friends",
+    "friendpage",
+    "cases"
+   ],
+   "pressed": 191,
+   "skipped": [
+    "duel::⚔️ Бій онлайн 🥉 Бронза · рейт",
+    "arFind::⚔️ Знайти суперника",
+    "teamCreate::🤝 Створити бій 2×2",
+    "friendDuel:0:⚔️ Дуель"
+   ],
+   "daily": {
+    "coinsBefore": 120,
+    "started": "gs",
+    "fps": 61,
+    "won": true,
+    "coinsAfter": 180,
+    "winScreen": "Пазл зібрано! 🎉 ⏱️ 0:10 🪙 +60 ✨ +64 XP 🧩 Пазл дня · 0:09.7 🏆 Місце #3 з 3 🎁 Бонус дня +40 🪙 · 🔥 серія 1 день 🏆 Рейтинг дня 🔄 Ще раз 🏠 Меню"
+   },
+   "campaign": {
+    "levelControls": [
+     "lvl"
+    ],
+    "card": "lvl:1",
+    "dialog": "▶️ Грати",
+    "started": "gs",
+    "afterBackground": {
+     "screen": "gs",
+     "dialog": ""
+    },
+    "won": true,
+    "winScreen": "Ідеально! 🎯 ⭐⭐⭐ ⏱️ 0:05 · перше проходження 🪙 +50 ✨ +39 XP 🎊 Новий рівень профілю — 2 · Новачок ▶️ Рівень 2 🔄 Ще раз 🗺️ До рівнів",
+    "changed": [
+     "rev",
+     "ts",
+     "xp",
+     "coins",
+     "stats",
+     "camp",
+     "hero",
+     "cos"
+    ],
+    "coins": [
+     180,
+     290
+    ],
+    "lostAfterReopen": [
+     "rev",
+     "ts"
+    ],
+    "coinsAfterReopen": 290
+   },
+   "arena": {
+    "controls": [
+     "arMode:🏆 Рейтинговий",
+     "arMode:⚔️ Звичайний",
+     "arFind:⚔️ Рейтинговий бій",
+     "teamCreate:🤝 Створити бій 2×2",
+     "button:🤝 Друзі та виклики",
+     "arBoard:🗓️ Сезон",
+     "arBoard:🏆 Рейтинг",
+     "arBoard:⭐ Рівень",
+     "button:🏠\nГоловна",
+     "button:🗺️\nРівні",
+     "button:⚔️\nАрена",
+     "button:🦊\nГерой\n!",
+     "button:👤\nПрофіль\n2"
+    ],
+    "pressed": "arFind:⚔️ Рейтинговий бій",
+    "screens": "arena,gs,gs,gs,gs,gs",
+    "opponent": "Космічний Лис 73 🤖 · 0/16",
+    "confirm": null,
+    "end": {
+     "screen": "ws",
+     "text": "💔 Поразка Ти здався 🏳️ 🦊 Ти ❤️ 102 · 🧩 0/16 · 💥 0 🦉 Космічний Лис 73 🤖 ❤️ 104 · 🧩 0/16 Офлайн-бій з ботом — без рейтингу 🪙 +8 ✨ +7 XP ⚔️ Ще бій 🏟️ До",
+     "error": ""
+    }
+   },
+   "xss": 0,
+   "heapMB": 6,
+   "longTasks": {
+    "count": 0,
+    "maxMs": 0
+   },
+   "apiCalls": [
+    "arena:avatarGet",
+    "arena:sync",
+    "queue:poll",
+    "arena:top",
+    "arena:seasonPrev",
+    "arena:friends",
+    "daily:top",
+    "arena:friendSnapshot",
+    "arena:friendInvite",
+    "arena:friendProfile",
+    "daily:done",
+    "arena:find"
+   ],
+   "blocked": []
+  },
+  {
+   "size": "414x896",
+   "errors": [],
+   "warnings": [],
+   "net": 0,
+   "overflow": {},
+   "smallTaps": {},
+   "screens": [
+    "home",
+    "levels",
+    "daily",
+    "hero",
+    "profile",
+    "free",
+    "arena",
+    "friends",
+    "friendpage",
+    "cases"
+   ],
+   "xss": 0,
+   "heapMB": 3,
+   "longTasks": {
+    "count": 1,
+    "maxMs": 58
+   },
+   "apiCalls": [
+    "arena:avatarGet",
+    "arena:sync",
+    "queue:poll",
+    "arena:top",
+    "arena:seasonPrev",
+    "arena:friends"
+   ],
+   "blocked": []
+  }
+ ],
+ "errors": []
+}

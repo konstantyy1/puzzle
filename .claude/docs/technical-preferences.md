@@ -51,7 +51,7 @@
 
 ## Testing
 
-- **Framework**: None in the repository yet. Releases are checked with a headless-Chromium smoke run at 360×740 and Node scripts that call the `api/` handlers; `/test-setup` should move these into `tests/`
+- **Framework**: Node's built-in test runner (`node:test`, no dependencies) — `npm test` runs `tests/unit` and `tests/integration`; browser smoke: `tests/smoke/browser-smoke.mjs` (Playwright, headless Chromium at 320/360/414 px); release checklist: `tests/smoke/critical-paths.md`
 - **Minimum Coverage**: [TO BE CONFIGURED]
 - **Required Tests**: Balance formulas, gameplay systems, networking (Arena, Daily puzzle, bot webhook)
 

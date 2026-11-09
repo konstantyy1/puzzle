@@ -46,7 +46,7 @@ from the shipped game. Its pillars are inferred.
 Release checks (a headless smoke run at 360×740 and API scripts) ran outside the repository.
 **Fix**: `/test-setup` — scaffold `tests/` for this web stack (Node's built-in test runner plus headless Chromium).
 **Time**: 1 session
-- [ ] `tests/` scaffolded and run before every release
+- [x] `tests/` scaffolded and run before every release (done 2026-11-09: `npm test` — 44 tests; browser smoke `tests/smoke/browser-smoke.mjs`; report `production/qa/smoke-2026-11-09.md`)
 
 ### 2c. The stack is outside the studio's engines
 `/setup-engine` supports Godot, Unity and Unreal only, so its outputs were written
